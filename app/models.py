@@ -3,11 +3,9 @@ from flask_login import UserMixin
 from datetime import datetime
 
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
-
 
 
 # ─── USUARIOS ───────────────────────────────────────────
@@ -24,10 +22,8 @@ class Usuario(UserMixin, db.Model):
     jugador = db.relationship('Jugador', backref='usuario', foreign_keys=[jugador_id])
 
 
-
 # ─── JUGADORES ──────────────────────────────────────────
 CATEGORIAS = ['TC', 'Master', 'Juvenil', 'Infantil', 'Sub13', 'Sub15', 'Sub19', 'Sub20']
-
 
 
 class Jugador(db.Model):
@@ -41,7 +37,6 @@ class Jugador(db.Model):
 
     def nombre_completo(self):
         return self.nombre
-
 
 
 # ─── TORNEOS ────────────────────────────────────────────
@@ -63,7 +58,6 @@ class Torneo(db.Model):
     pts_participacion = db.Column(db.Integer, default=5)
 
 
-
 # ─── INSCRIPCIONES ──────────────────────────────────────
 class Inscripcion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -72,11 +66,9 @@ class Inscripcion(db.Model):
     categoria = db.Column(db.String(20), nullable=False)
     es_seed = db.Column(db.Boolean, default=False)
     numero_seed = db.Column(db.Integer, nullable=True)
-    solo_en_grupo = db.Column(db.Boolean, default=False)  # ← NUEVO
 
     torneo = db.relationship('Torneo', backref='inscripciones')
     jugador = db.relationship('Jugador', backref='inscripciones')
-
 
 
 # ─── GRUPOS ─────────────────────────────────────────────
@@ -88,7 +80,6 @@ class Grupo(db.Model):
 
     torneo = db.relationship('Torneo', backref='grupos')
     jugadores = db.relationship('GrupoJugador', backref='grupo')
-
 
 
 class GrupoJugador(db.Model):
@@ -104,14 +95,13 @@ class GrupoJugador(db.Model):
     jugador = db.relationship('Jugador')
 
 
-
 # ─── PARTIDOS ───────────────────────────────────────────
 class Partido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     torneo_id = db.Column(db.Integer, db.ForeignKey('torneo.id'), nullable=False)
     categoria = db.Column(db.String(20), nullable=False)
-    fase = db.Column(db.String(30), nullable=False)
-    ronda = db.Column(db.Integer, nullable=True)
+    fase = db.Column(db.String(30), nullable=False)  # grupos / cuartos / semi / final / tercer_lugar
+    ronda = db.Column(db.Integer, nullable=True)      # posición en bracket
     grupo_id = db.Column(db.Integer, db.ForeignKey('grupo.id'), nullable=True)
     jugador1_id = db.Column(db.Integer, db.ForeignKey('jugador.id'), nullable=True)
     jugador2_id = db.Column(db.Integer, db.ForeignKey('jugador.id'), nullable=True)
@@ -125,7 +115,6 @@ class Partido(db.Model):
     ganador = db.relationship('Jugador', foreign_keys=[ganador_id])
 
 
-
 # ─── RANKING INTERNO ────────────────────────────────────
 class PuntosRanking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -137,7 +126,6 @@ class PuntosRanking(db.Model):
 
     jugador = db.relationship('Jugador', backref='puntos_historial')
     torneo = db.relationship('Torneo')
-
 
 
 # ─── SOLICITUDES DE REGISTRO ────────────────────────────

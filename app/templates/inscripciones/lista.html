@@ -2,7 +2,6 @@
 {% block title %}Inscripciones - {{ torneo.nombre }}{% endblock %}
 {% block page_title %}Inscripciones — {{ torneo.nombre }}{% endblock %}
 
-
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
     {% if torneo.logo %}
@@ -13,7 +12,6 @@
         <p class="text-gray-400 text-sm">Gestión de Inscripciones y Seeds</p>
     </div>
 </div>
-
 
 <!-- Filtros categoría -->
 <div class="flex flex-wrap gap-2 mb-6">
@@ -29,9 +27,7 @@
     {% endfor %}
 </div>
 
-
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
 
     <!-- Inscritos -->
     <div class="bg-gray-800 rounded-xl p-5">
@@ -49,38 +45,20 @@
             </form>
         </div>
 
-
         {% if inscritos %}
         <div class="space-y-2">
             {% for insc, jug in inscritos %}
             <div class="flex items-center justify-between bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-2 transition">
-                <div class="flex items-center gap-2">
-
-                    <!-- Botón Seed -->
+                <div class="flex items-center gap-3">
                     <form method="POST" action="{{ url_for('main.toggle_seed', torneo_id=torneo.id, inscripcion_id=insc.id) }}">
                         <input type="hidden" name="categoria" value="{{ categoria_actual }}">
                         <button type="submit" class="text-lg hover:scale-125 transition-transform" title="Toggle seed">
                             {% if insc.es_seed %}⭐{% else %}☆{% endif %}
                         </button>
                     </form>
-
-                    <!-- Botón Solo en grupo -->
-                    <form method="POST" action="{{ url_for('main.toggle_solo_grupo', torneo_id=torneo.id, inscripcion_id=insc.id) }}">
-                        <input type="hidden" name="categoria" value="{{ categoria_actual }}">
-                        <button type="submit"
-                            title="{% if insc.solo_en_grupo %}Quitar grupo individual{% else %}Poner en grupo individual{% endif %}"
-                            class="text-xs px-2 py-1 rounded font-bold transition
-                            {% if insc.solo_en_grupo %}bg-purple-600 text-white{% else %}bg-gray-600 text-gray-400 hover:bg-purple-800 hover:text-white{% endif %}">
-                            👤
-                        </button>
-                    </form>
-
                     <div>
                         <p class="font-medium text-sm">{{ jug.nombre }}</p>
-                        <div class="flex gap-2">
-                            {% if insc.es_seed %}<span class="text-yellow-400 text-xs">⭐ Seed</span>{% endif %}
-                            {% if insc.solo_en_grupo %}<span class="text-purple-400 text-xs">👤 Solo</span>{% endif %}
-                        </div>
+                        {% if insc.es_seed %}<span class="text-yellow-400 text-xs">Cabeza de serie</span>{% endif %}
                     </div>
                 </div>
                 <a href="{{ url_for('main.eliminar_inscripcion', torneo_id=torneo.id, inscripcion_id=insc.id, categoria=categoria_actual) }}"
@@ -93,10 +71,7 @@
         <p class="text-gray-500 text-sm text-center py-8">No hay jugadores inscritos aún.</p>
         {% endif %}
 
-
         {% set seeds = inscritos|selectattr('0.es_seed')|list %}
-        {% set solos = inscritos|selectattr('0.solo_en_grupo')|list %}
-
         {% if seeds %}
         <div class="mt-4 p-3 bg-yellow-900 bg-opacity-20 rounded-lg border border-yellow-800">
             <p class="text-yellow-400 text-xs font-bold mb-1">⭐ Seeds: {{ seeds|length }}</p>
@@ -105,17 +80,7 @@
             {% endfor %}
         </div>
         {% endif %}
-
-        {% if solos %}
-        <div class="mt-3 p-3 bg-purple-900 bg-opacity-20 rounded-lg border border-purple-800">
-            <p class="text-purple-400 text-xs font-bold mb-1">👤 Grupo individual: {{ solos|length }}</p>
-            {% for insc, jug in solos %}
-            <span class="text-purple-300 text-xs">{{ jug.nombre }}{% if not loop.last %}, {% endif %}</span>
-            {% endfor %}
-        </div>
-        {% endif %}
     </div>
-
 
     <!-- Disponibles -->
     <div class="bg-gray-800 rounded-xl p-5">
@@ -145,7 +110,6 @@
         {% endif %}
     </div>
 </div>
-
 
 <!-- Resumen total -->
 <div class="mt-6 bg-gray-800 rounded-xl p-5">
