@@ -13,140 +13,223 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+
+        #sidebar { transition: width .25s ease, transform .25s ease; width: 256px; }
+        #sidebar.collapsed { width: 68px; }
+        #main-content { transition: margin-left .25s ease; margin-left: 256px; }
+        #main-content.collapsed { margin-left: 68px; }
+
+        #sidebar.collapsed .sidebar-label { display: none; }
+        #sidebar.collapsed .sidebar-section-label { display: none; }
+        #sidebar.collapsed .logo-text { display: none; }
+        #sidebar.collapsed .user-info { display: none; }
+        #sidebar.collapsed .live-badge { display: none; }
+
+        #sidebar.collapsed .nav-link { justify-content: center; padding-left: 0; padding-right: 0; }
+        #sidebar.collapsed .nav-link span.text-lg { margin: 0; }
+        #sidebar.collapsed .logo-icon { margin: 0 auto; }
+        #sidebar.collapsed .logo-wrapper { justify-content: center; }
+        #sidebar.collapsed .user-avatar { margin: 0 auto; }
+        #sidebar.collapsed .user-wrapper { justify-content: center; }
+        #sidebar.collapsed .logout-btn { justify-content: center; }
+        #sidebar.collapsed .logout-label { display: none; }
+
+        #sidebar.collapsed .nav-link { position: relative; }
+        #sidebar.collapsed .nav-link:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 68px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 999;
+            border: 1px solid #334155;
+            pointer-events: none;
+        }
+
+        #toggle-btn { transition: transform .25s ease; }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+                width: 256px !important;
+                position: fixed;
+                z-index: 50;
+            }
+            #sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            #sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+            #main-content { margin-left: 0 !important; }
+            #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+            #overlay.active { display: block; }
+            #mobile-menu-btn { display: flex; }
+        }
+        @media (min-width: 769px) {
+            #mobile-menu-btn { display: none; }
+            #overlay { display: none !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex">
 
-<!-- ── SIDEBAR ── -->
-<aside class="w-64 min-h-screen bg-gray-900 border-r border-gray-800 flex flex-col fixed left-0 top-0 z-40">
+<div id="overlay" onclick="closeMobileSidebar()"></div>
 
-    <!-- Logo -->
-    <div class="px-5 py-5 border-b border-gray-800">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-black">🏓</div>
-            <div>
+<aside id="sidebar" class="min-h-screen bg-gray-900 border-r border-gray-800 flex flex-col fixed left-0 top-0 z-50 overflow-hidden">
+
+    <div class="px-3 py-4 border-b border-gray-800">
+        <div class="logo-wrapper flex items-center gap-3">
+            <div class="logo-icon w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-black flex-shrink-0">🏓</div>
+            <div class="logo-text flex-1 min-w-0">
                 <p class="font-black text-white text-sm leading-tight">TorneoTT</p>
                 <p class="text-gray-500 text-xs">Sistema de Torneos</p>
             </div>
+            <button id="toggle-btn" onclick="toggleSidebar()"
+                class="hidden md:flex w-7 h-7 rounded-md bg-gray-800 hover:bg-gray-700 items-center justify-center text-gray-400 hover:text-white flex-shrink-0 transition">
+                <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7M18 19l-7-7 7-7"/>
+                </svg>
+            </button>
         </div>
     </div>
 
-    <!-- Nav -->
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
 
-        <p class="text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mb-2">Principal</p>
+        <p class="sidebar-section-label text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mb-2">Principal</p>
 
-        <a href="{{ url_for('main.dashboard') }}"
+        <a href="{{ url_for('main.dashboard') }}" data-tooltip="Inicio"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint == 'main.dashboard' %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">🏠</span> Inicio
+            <span class="text-lg flex-shrink-0">🏠</span>
+            <span class="sidebar-label">Inicio</span>
         </a>
 
-        <p class="text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mt-4 mb-2">Gestión</p>
+        <p class="sidebar-section-label text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mt-4 mb-2">Gestión</p>
 
-        <a href="{{ url_for('main.jugadores') }}"
+        <a href="{{ url_for('main.jugadores') }}" data-tooltip="Jugadores"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint in ['main.jugadores','main.nuevo_jugador','main.editar_jugador','main.importar_jugadores'] %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">👤</span> Jugadores
+            <span class="text-lg flex-shrink-0">👤</span>
+            <span class="sidebar-label">Jugadores</span>
         </a>
 
-        <a href="{{ url_for('main.torneos') }}"
+        <a href="{{ url_for('main.torneos') }}" data-tooltip="Torneos"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint in ['main.torneos','main.nuevo_torneo','main.editar_torneo'] %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">🏆</span> Torneos
+            <span class="text-lg flex-shrink-0">🏆</span>
+            <span class="sidebar-label">Torneos</span>
         </a>
 
         {% set torneo_id_url = request.view_args.get('torneo_id') if request.view_args else None %}
         {% if torneo_id_url %}
 
-        <a href="{{ url_for('main.inscripciones', torneo_id=torneo_id_url) }}"
+        <a href="{{ url_for('main.inscripciones', torneo_id=torneo_id_url) }}" data-tooltip="Inscripciones"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint == 'main.inscripciones' %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">📋</span> Inscripciones
+            <span class="text-lg flex-shrink-0">📋</span>
+            <span class="sidebar-label">Inscripciones</span>
         </a>
 
-        <a href="{{ url_for('main.fixture', torneo_id=torneo_id_url) }}"
+        <a href="{{ url_for('main.fixture', torneo_id=torneo_id_url) }}" data-tooltip="Fixture"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint in ['main.fixture','main.generar_fixture','main.registrar_resultado'] %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">📅</span> Fixture
+            <span class="text-lg flex-shrink-0">📅</span>
+            <span class="sidebar-label">Fixture</span>
         </a>
 
-        <a href="{{ url_for('main.bracket', torneo_id=torneo_id_url) }}"
+        <a href="{{ url_for('main.bracket', torneo_id=torneo_id_url) }}" data-tooltip="Bracket"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint in ['main.bracket','main.generar_bracket','main.resultado_bracket'] %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">🥊</span> Bracket
+            <span class="text-lg flex-shrink-0">🥊</span>
+            <span class="sidebar-label">Bracket</span>
         </a>
 
         {% endif %}
 
-        <p class="text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mt-4 mb-2">Administración</p>
+        <p class="sidebar-section-label text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mt-4 mb-2">Administración</p>
 
         {% if current_user.is_authenticated and current_user.rol == 'admin' %}
-        <a href="{{ url_for('main.admin_usuarios') }}"
+        <a href="{{ url_for('main.admin_usuarios') }}" data-tooltip="Usuarios"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint == 'main.admin_usuarios' %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">👥</span> Usuarios
+            <span class="text-lg flex-shrink-0">👥</span>
+            <span class="sidebar-label">Usuarios</span>
         </a>
         {% endif %}
 
-        <p class="text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mt-4 mb-2">Público</p>
+        <p class="sidebar-section-label text-gray-600 text-xs uppercase tracking-widest font-bold px-3 mt-4 mb-2">Público</p>
 
-        <a href="{{ url_for('main.ranking') }}" target="_blank"
+        <a href="{{ url_for('main.ranking') }}" target="_blank" data-tooltip="Ranking"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
             {% if request.endpoint == 'main.ranking' %}nav-active{% else %}text-gray-400{% endif %}">
-            <span class="text-lg">🏅</span> Ranking
+            <span class="text-lg flex-shrink-0">🏅</span>
+            <span class="sidebar-label">Ranking</span>
         </a>
 
-        <a href="{{ url_for('main.panel_publico') }}" target="_blank"
+        <a href="{{ url_for('main.panel_publico') }}" target="_blank" data-tooltip="Arbitraje en Vivo"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400">
-            <span class="text-lg">⚡</span> Arbitraje en Vivo
+            <span class="text-lg flex-shrink-0">⚡</span>
+            <span class="sidebar-label">Arbitraje en Vivo</span>
         </a>
 
-        <a href="{{ url_for('main.panel_publico') }}" target="_blank"
+        <a href="{{ url_for('main.panel_publico') }}" target="_blank" data-tooltip="Panel Público"
             class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400">
-            <span class="text-lg">📺</span> Panel Público
-            <span class="ml-auto text-xs bg-red-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">LIVE</span>
+            <span class="text-lg flex-shrink-0">📺</span>
+            <span class="sidebar-label">Panel Público</span>
+            <span class="live-badge ml-auto text-xs bg-red-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">LIVE</span>
         </a>
 
     </nav>
 
-    <!-- Usuario -->
-    <div class="px-4 py-4 border-t border-gray-800">
+    <div class="px-3 py-4 border-t border-gray-800">
         {% if current_user.is_authenticated %}
-        <div class="flex items-center gap-3 mb-3">
-            <div class="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center text-sm font-bold">
+        <div class="user-wrapper flex items-center gap-3 mb-3">
+            <div class="user-avatar w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
                 {{ current_user.username[0].upper() }}
             </div>
-            <div class="flex-1 min-w-0">
+            <div class="user-info flex-1 min-w-0">
                 <p class="text-sm font-semibold truncate">{{ current_user.username }}</p>
                 <p class="text-xs text-gray-500">{{ current_user.rol }}</p>
             </div>
         </div>
         <a href="{{ url_for('auth.logout') }}"
-            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition">
-            <span>🚪</span> Cerrar sesión
+            class="logout-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition">
+            <span>🚪</span>
+            <span class="logout-label">Cerrar sesión</span>
         </a>
         {% endif %}
     </div>
 
 </aside>
 
-<!-- ── CONTENIDO ── -->
-<main class="ml-64 flex-1 flex flex-col min-h-screen">
+<main id="main-content" class="flex-1 flex flex-col min-h-screen">
 
-    <!-- Topbar -->
-    <div class="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <h1 class="text-lg font-bold text-white">{% block page_title %}{% endblock %}</h1>
+    <div class="bg-gray-900 border-b border-gray-800 px-4 py-4 flex items-center justify-between sticky top-0 z-30">
+        <div class="flex items-center gap-3">
+            <button id="mobile-menu-btn" onclick="openMobileSidebar()"
+                class="w-9 h-9 rounded-lg bg-gray-800 hover:bg-gray-700 items-center justify-center text-gray-400 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <h1 class="text-lg font-bold text-white">{% block page_title %}{% endblock %}</h1>
+        </div>
         <div class="flex items-center gap-3 text-sm text-gray-500">
             {% if current_user.is_authenticated %}
-            <span>{{ current_user.rol | capitalize }}</span>
+            <span class="hidden sm:inline">{{ current_user.rol | capitalize }}</span>
             <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Flash messages -->
-    <div class="px-6 pt-4">
+    <div class="px-4 md:px-6 pt-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
@@ -162,12 +245,42 @@
         {% endwith %}
     </div>
 
-    <!-- Page content -->
-    <div class="flex-1 px-6 py-4">
+    <div class="flex-1 px-4 md:px-6 py-4">
         {% block content %}{% endblock %}
     </div>
 
 </main>
+
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    const toggleIcon = document.getElementById('toggle-icon');
+
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        mainContent.classList.add('collapsed');
+        toggleIcon.style.transform = 'rotate(180deg)';
+    }
+
+    function toggleSidebar() {
+        const collapsed = sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('collapsed');
+        toggleIcon.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        localStorage.setItem('sidebarCollapsed', collapsed);
+    }
+
+    function openMobileSidebar() {
+        sidebar.classList.add('mobile-open');
+        sidebar.classList.remove('collapsed');
+        document.getElementById('overlay').classList.add('active');
+    }
+
+    function closeMobileSidebar() {
+        sidebar.classList.remove('mobile-open');
+        document.getElementById('overlay').classList.remove('active');
+    }
+</script>
 
 </body>
 </html>

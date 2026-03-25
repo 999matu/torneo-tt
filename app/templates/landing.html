@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TorneoTT — Sistema de Torneos de Tenis de Mesa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
+        .gradient-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card-hover { transition: transform .2s, box-shadow .2s; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- NAVBAR -->
+<nav class="border-b border-gray-800 bg-gray-900 bg-opacity-80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-black">🏓</div>
+            <div>
+                <p class="font-black text-white text-sm leading-tight">TorneoTT</p>
+                <p class="text-gray-500 text-xs">Sistema de Torneos</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('main.ranking') }}"
+                class="text-sm text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-gray-800">
+                🏅 Ranking
+            </a>
+            <a href="{{ url_for('main.panel_publico') }}"
+                class="text-sm text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-gray-800">
+                📺 Panel Público
+            </a>
+            <a href="{{ url_for('auth.login') }}"
+                class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+                Administrar →
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="max-w-6xl mx-auto px-6 py-20 text-center">
+    <div class="inline-flex items-center gap-2 bg-blue-900 bg-opacity-30 border border-blue-800 text-blue-300 text-xs font-bold px-4 py-2 rounded-full mb-6">
+        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+        Sistema activo
+    </div>
+    <h1 class="text-5xl md:text-6xl font-black mb-6">
+        <span class="gradient-text">Torneos de Tenis</span><br>
+        <span class="text-white">de Mesa Profesional</span>
+    </h1>
+    <p class="text-gray-400 text-lg max-w-2xl mx-auto mb-10">
+        Gestión completa de torneos, fixture automático, bracket eliminatorio y ranking en tiempo real.
+    </p>
+    <div class="flex flex-wrap justify-center gap-4">
+        <a href="{{ url_for('main.ranking') }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition text-lg">
+            🏅 Ver Ranking
+        </a>
+        <a href="{{ url_for('main.panel_publico') }}"
+            class="bg-gray-800 hover:bg-gray-700 text-white font-bold px-8 py-3 rounded-xl transition text-lg flex items-center gap-2">
+            📺 Panel en Vivo
+            <span class="text-xs bg-red-600 px-2 py-0.5 rounded font-bold animate-pulse">LIVE</span>
+        </a>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-hover bg-gray-800 rounded-2xl p-6 border border-gray-700">
+            <div class="text-4xl mb-4">🏆</div>
+            <h3 class="font-bold text-lg mb-2">Torneos Completos</h3>
+            <p class="text-gray-400 text-sm">Crea torneos con fase de grupos y bracket eliminatorio con configuración personalizada de puntos.</p>
+        </div>
+        <div class="card-hover bg-gray-800 rounded-2xl p-6 border border-gray-700">
+            <div class="text-4xl mb-4">⚡</div>
+            <h3 class="font-bold text-lg mb-2">Resultados en Vivo</h3>
+            <p class="text-gray-400 text-sm">Marcador en tiempo real con WebSockets. El público ve los resultados al instante sin recargar.</p>
+        </div>
+        <div class="card-hover bg-gray-800 rounded-2xl p-6 border border-gray-700">
+            <div class="text-4xl mb-4">🏅</div>
+            <h3 class="font-bold text-lg mb-2">Ranking Automático</h3>
+            <p class="text-gray-400 text-sm">Puntos calculados automáticamente según posición final. Ranking histórico por categoría.</p>
+        </div>
+    </div>
+</section>
+
+<!-- TORNEOS ACTIVOS -->
+{% if torneos %}
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <h2 class="text-2xl font-black mb-6">🔥 Torneos Activos</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for torneo in torneos %}
+        <div class="card-hover bg-gray-800 rounded-xl p-5 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+                {% if torneo.logo %}
+                <img src="{{ url_for('static', filename='uploads/' + torneo.logo) }}" class="w-10 h-10 rounded-lg object-contain bg-gray-700 p-1">
+                {% else %}
+                <div class="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-xl">🏆</div>
+                {% endif %}
+                <div>
+                    <p class="font-bold text-sm">{{ torneo.nombre }}</p>
+                    <p class="text-gray-500 text-xs">{{ torneo.fecha.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+            <a href="{{ url_for('main.panel_publico', torneo_id=torneo.id) }}"
+                class="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg transition">
+                Ver en vivo →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- RANKING TOP -->
+{% if ranking_top %}
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <h2 class="text-2xl font-black mb-6">🥇 Top Ranking</h2>
+    <div class="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
+        {% for jugador, total in ranking_top %}
+        <div class="flex items-center justify-between px-6 py-4 {% if not loop.last %}border-b border-gray-700{% endif %} hover:bg-gray-750 transition">
+            <div class="flex items-center gap-4">
+                <span class="text-2xl font-black
+                    {% if loop.index == 1 %}text-yellow-400
+                    {% elif loop.index == 2 %}text-gray-300
+                    {% elif loop.index == 3 %}text-amber-600
+                    {% else %}text-gray-600{% endif %}">
+                    #{{ loop.index }}
+                </span>
+                <div>
+                    <p class="font-bold">{{ jugador.nombre }}</p>
+                    <p class="text-gray-500 text-xs">{{ jugador.categoria }}</p>
+                </div>
+            </div>
+            <span class="text-blue-400 font-black text-lg">{{ total }} pts</span>
+        </div>
+        {% endfor %}
+        <div class="px-6 py-3 bg-gray-900 text-center">
+            <a href="{{ url_for('main.ranking') }}" class="text-blue-400 text-sm hover:text-blue-300 font-bold transition">
+                Ver ranking completo →
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- FOOTER -->
+<footer class="border-t border-gray-800 mt-12 py-8 text-center text-gray-600 text-sm">
+    <p>🏓 TorneoTT — Sistema de Torneos de Tenis de Mesa</p>
+</footer>
+
+</body>
+</html>
