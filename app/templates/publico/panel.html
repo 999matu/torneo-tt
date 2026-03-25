@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel en Vivo — TorneoTT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .pulso { animation: pulso 1.5s infinite; }
+        @keyframes pulso { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .partido-live { border-color: #ef4444 !important; box-shadow: 0 0 20px rgba(239,68,68,0.2); }
+        .partido-terminado { opacity: 0.75; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<div class="bg-gray-900 border-b border-gray-800 px-4 py-3 sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-sm">🏓</div>
+            <div>
+                <p class="font-black text-sm leading-tight">
+                    {% if torneo %}{{ torneo.nombre }}{% else %}TorneoTT{% endif %}
+                </p>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full pulso"></span>
+                    <span class="text-red-400 text-xs font-bold">EN VIVO</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            {% for t in torneos %}
+            <a href="?torneo_id={{ t.id }}"
+                class="text-xs px-3 py-1.5 rounded-lg font-semibold transition
+                {% if torneo and torneo.id == t.id %}bg-blue-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700{% endif %}">
+                {{ t.nombre }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if torneo %}
+<!-- Tabs categorías -->
+<div class="max-w-7xl mx-auto px-4 pt-4 flex flex-wrap gap-2">
+    {% for item in cats_con_inscritos %}
+    <a href="?torneo_id={{ torneo.id }}&categoria={{ item.cat }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold transition
+        {% if categoria_actual == item.cat %}bg-blue-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white{% endif %}">
+        {{ item.cat }}
+        <span class="ml-1 text-xs opacity-60">{{ item.count }}</span>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- MARCADORES EN VIVO (se renderizan dinámicamente por Socket.IO) -->
+    <div id="panel-live" class="mb-8">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 bg-red-500 rounded-full pulso"></span>
+            <h2 class="font-bold text-red-400 uppercase text-sm tracking-wider">Partidos en Curso</h2>
+        </div>
+        <div id="tarjetas-live" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div id="sin-live" class="col-span-full text-center py-8 text-gray-600 text-sm">
+                Ningún partido iniciado aún...
+            </div>
+        </div>
+    </div>
+
+    <!-- GRUPOS Y PARTIDOS -->
+    {% for grupo in grupos %}
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center font-black text-sm">{{ grupo.numero }}</div>
+            <h3 class="font-bold text-lg">Grupo {{ grupo.numero }}</h3>
+            <!-- Tabla posiciones mini -->
+            <div class="ml-auto hidden sm:flex items-center gap-4 text-xs text-gray-500">
+                {% set sorted_jug = grupo.jugadores | sort(attribute='partidos_ganados', reverse=True) %}
+                {% for gj in sorted_jug %}
+                <span class="{% if loop.index <= 2 %}text-green-400 font-bold{% endif %}">
+                    {{ gj.jugador.nombre.split()[0] }} {{ gj.partidos_ganados }}V/{{ gj.partidos_jugados }}J
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Partidos del grupo -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {% for partido in grupo_partidos.get(grupo.id, []) %}
+            <div id="partido-{{ partido.id }}"
+                class="partido-card bg-gray-800 rounded-xl overflow-hidden border
+                {% if partido.jugado %}border-gray-600 partido-terminado{% else %}border-gray-700{% endif %}">
+
+                <!-- Estado badge -->
+                <div class="px-3 py-1.5 flex items-center justify-between
+                    {% if partido.jugado %}bg-gray-700{% else %}bg-gray-750{% endif %}">
+                    <span class="text-xs font-bold
+                        {% if partido.jugado %}text-gray-400{% else %}text-yellow-500{% endif %}">
+                        {% if partido.jugado %}✓ Finalizado{% else %}⏳ Pendiente{% endif %}
+                    </span>
+                    {% if partido.resultado %}
+                    <span class="text-xs font-mono text-gray-400">{{ partido.resultado }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Jugador 1 -->
+                <div class="px-4 py-2.5 border-b border-gray-700
+                    {% if partido.ganador_id == partido.jugador1_id %}bg-green-900 bg-opacity-20{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold text-sm truncate
+                            {% if partido.ganador_id == partido.jugador1_id %}text-green-400
+                            {% elif partido.jugado %}text-red-400{% endif %}">
+                            {{ partido.jugador1.nombre if partido.jugador1 else '—' }}
+                            {% if partido.ganador_id == partido.jugador1_id %}✓{% endif %}
+                        </p>
+                        <span id="pts1-{{ partido.id }}" class="text-2xl font-black text-gray-600 live-pts">—</span>
+                    </div>
+                    <div id="sets1-{{ partido.id }}" class="text-xs text-gray-500 live-sets"></div>
+                </div>
+
+                <!-- Jugador 2 -->
+                <div class="px-4 py-2.5
+                    {% if partido.ganador_id == partido.jugador2_id %}bg-green-900 bg-opacity-20{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold text-sm truncate
+                            {% if partido.ganador_id == partido.jugador2_id %}text-green-400
+                            {% elif partido.jugado %}text-red-400{% endif %}">
+                            {{ partido.jugador2.nombre if partido.jugador2 else '—' }}
+                            {% if partido.ganador_id == partido.jugador2_id %}✓{% endif %}
+                        </p>
+                        <span id="pts2-{{ partido.id }}" class="text-2xl font-black text-gray-600 live-pts">—</span>
+                    </div>
+                    <div id="sets2-{{ partido.id }}" class="text-xs text-gray-500 live-sets"></div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Tabla de posiciones del grupo -->
+        <div class="mt-4 bg-gray-800 rounded-xl overflow-hidden">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="text-gray-500 border-b border-gray-700 uppercase tracking-wider">
+                        <th class="px-4 py-2 text-left">Jugador</th>
+                        <th class="px-3 py-2 text-center">J</th>
+                        <th class="px-3 py-2 text-center">G</th>
+                        <th class="px-3 py-2 text-center">P</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set sorted_jug = grupo.jugadores | sort(attribute='partidos_ganados', reverse=True) %}
+                    {% for gj in sorted_jug %}
+                    <tr class="border-b border-gray-700 last:border-0
+                        {% if loop.index <= 2 %}bg-green-900 bg-opacity-5{% endif %}">
+                        <td class="px-4 py-2 font-semibold flex items-center gap-2">
+                            {% if loop.index == 1 %}<span class="text-yellow-400">①</span>
+                            {% elif loop.index == 2 %}<span class="text-blue-400">②</span>
+                            {% else %}<span class="text-gray-600">{{ loop.index }}</span>{% endif %}
+                            {{ gj.jugador.nombre }}
+                        </td>
+                        <td class="px-3 py-2 text-center text-gray-400">{{ gj.partidos_jugados }}</td>
+                        <td class="px-3 py-2 text-center text-green-400 font-bold">{{ gj.partidos_ganados }}</td>
+                        <td class="px-3 py-2 text-center text-red-400">{{ gj.partidos_jugados - gj.partidos_ganados }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not grupos %}
+    <div class="text-center py-20">
+        <p class="text-5xl mb-4">🏓</p>
+        <p class="text-gray-400">No hay grupos generados aún para <strong>{{ categoria_actual }}</strong>.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% else %}
+<div class="text-center py-20">
+    <p class="text-5xl mb-4">🏆</p>
+    <p class="text-gray-400 text-lg">No hay torneos activos.</p>
+</div>
+{% endif %}
+
+<script>
+const socket = io();
+// Mapa de partidos live activos: id -> datos
+const partidos_live = {};
+
+socket.on('marcador_live', function(data) {
+    const id = data.partido_id;
+    partidos_live[id] = data;
+
+    // Actualizar tarjeta estática si existe
+    const el1 = document.getElementById('pts1-' + id);
+    const el2 = document.getElementById('pts2-' + id);
+    const sets1 = document.getElementById('sets1-' + id);
+    const sets2 = document.getElementById('sets2-' + id);
+    const card = document.getElementById('partido-' + id);
+
+    if (el1) {
+        el1.textContent = data.pts1;
+        el1.classList.remove('text-gray-600');
+        el1.classList.add('text-white');
+    }
+    if (el2) {
+        el2.textContent = data.pts2;
+        el2.classList.remove('text-gray-600');
+        el2.classList.add('text-white');
+    }
+    if (sets1) sets1.textContent = 'Sets: ' + data.sets1;
+    if (sets2) sets2.textContent = 'Sets: ' + data.sets2;
+    if (card) {
+        card.classList.add('partido-live');
+        card.classList.remove('border-gray-700');
+    }
+
+    // Renderizar tarjeta en panel live
+    renderLive(id, data);
+});
+
+socket.on('resultado_actualizado', function(data) {
+    // Quitar del panel live y recargar página
+    delete partidos_live[data.partido_id];
+    const liveCard = document.getElementById('live-card-' + data.partido_id);
+    if (liveCard) liveCard.remove();
+    const card = document.getElementById('partido-' + data.partido_id);
+    if (card) {
+        card.classList.remove('partido-live');
+        card.classList.add('partido-terminado');
+    }
+    // Recargar para mostrar resultado oficial
+    setTimeout(() => location.reload(), 800);
+});
+
+function renderLive(id, data) {
+    const container = document.getElementById('tarjetas-live');
+    const sinLive = document.getElementById('sin-live');
+    if (sinLive) sinLive.remove();
+
+    let card = document.getElementById('live-card-' + id);
+    const sets_str = (data.historial || []).map(s => s.p1 + '-' + s.p2).join('  ');
+
+    const html = `
+    <div id="live-card-${id}" class="bg-gray-800 rounded-xl border-2 border-red-500 overflow-hidden shadow-lg"
+        style="box-shadow: 0 0 25px rgba(239,68,68,0.25)">
+        <div class="bg-red-900 bg-opacity-30 px-3 py-1.5 flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-red-500 rounded-full pulso"></span>
+                <span class="text-red-400 text-xs font-bold">EN VIVO</span>
+            </div>
+            <span class="text-gray-400 text-xs">Set ${data.set_actual || 1}</span>
+        </div>
+        <div class="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+            <p class="font-bold text-sm truncate flex-1 ${data.pts1 > data.pts2 ? 'text-white' : 'text-gray-400'}">${data.j1 || '—'}</p>
+            <span class="text-4xl font-black ml-3 ${data.pts1 > data.pts2 ? 'text-blue-400' : 'text-gray-500'}">${data.pts1}</span>
+        </div>
+        <div class="px-4 py-3 flex items-center justify-between">
+            <p class="font-bold text-sm truncate flex-1 ${data.pts2 > data.pts1 ? 'text-white' : 'text-gray-400'}">${data.j2 || '—'}</p>
+            <span class="text-4xl font-black ml-3 ${data.pts2 > data.pts1 ? 'text-red-400' : 'text-gray-500'}">${data.pts2}</span>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 flex items-center justify-between">
+            <span class="text-xs text-gray-500">Sets: ${data.sets1} - ${data.sets2}</span>
+            ${sets_str ? `<span class="text-xs font-mono text-gray-600">${sets_str}</span>` : ''}
+        </div>
+    </div>`;
+
+    if (card) {
+        card.outerHTML = html;
+    } else {
+        container.insertAdjacentHTML('beforeend', html);
+    }
+}
+</script>
+</body>
+</html>

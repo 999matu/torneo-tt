@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Torneo{% endblock %}
+{% block page_title %}Crear Torneo{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <h2 class="text-2xl font-bold mb-6">Nuevo Torneo</h2>
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+
+        <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <h3 class="font-bold text-blue-400 text-sm uppercase tracking-wider">Información del Torneo</h3>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Nombre del torneo *</label>
+                <input type="text" name="nombre" required placeholder="Ej: Torneo Interno Marzo 2026"
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Descripción</label>
+                <textarea name="descripcion" rows="2"
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Logo (opcional)</label>
+                <input type="file" name="logo" accept="image/*"
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 file:mr-4 file:py-1 file:px-3 file:rounded file:bg-blue-600 file:text-white file:border-0 transition">
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <h3 class="font-bold text-blue-400 text-sm uppercase tracking-wider">Configuración de Partidos</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Sets por partido</label>
+                    <select name="sets_por_partido" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="3">Mejor de 3</option>
+                        <option value="5" selected>Mejor de 5</option>
+                        <option value="7">Mejor de 7</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Puntos por set</label>
+                    <input type="number" name="puntos_por_set" value="11"
+                        class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <input type="checkbox" name="pasan_segundo" id="pasan_segundo" class="w-4 h-4 accent-blue-500">
+                <label for="pasan_segundo" class="text-gray-300 text-sm">¿También pasa el 2° de cada grupo?</label>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <h3 class="font-bold text-blue-400 text-sm uppercase tracking-wider">Tabla de Puntos Ranking</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-gray-300 text-sm mb-1 block">🥇 Campeón</label>
+                    <input type="number" name="pts_campeon" value="100" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🥈 Finalista</label>
+                    <input type="number" name="pts_finalista" value="70" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🥉 Semifinalista</label>
+                    <input type="number" name="pts_semifinalista" value="50" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🏅 Cuartos</label>
+                    <input type="number" name="pts_cuartos" value="30" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">✅ Victoria grupos</label>
+                    <input type="number" name="pts_grupos_victoria" value="15" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🎽 Participación</label>
+                    <input type="number" name="pts_participacion" value="5" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-3 rounded-lg transition text-lg">
+            🏆 Crear Torneo
+        </button>
+    </form>
+</div>
+{% endblock %}

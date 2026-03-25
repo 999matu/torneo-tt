@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Importar Jugadores - Asociación Nueva Talagante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <nav class="bg-gray-800 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold">🏓 Asociación Nueva Talagante</h1>
+        <a href="{{ url_for('main.jugadores') }}" class="text-gray-400 hover:text-white text-sm">← Volver</a>
+    </nav>
+    <div class="p-8 max-w-lg mx-auto">
+        <h2 class="text-2xl font-bold mb-2">Importar desde Excel</h2>
+        <p class="text-gray-400 text-sm mb-6">
+            El archivo debe tener los datos desde la <strong>fila 6</strong>:<br>
+            <span class="text-gray-300">Columna B = Nombre completo &nbsp;|&nbsp; Columna C = Categoría</span>
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-3 rounded-lg text-sm
+                    {% if category == 'success' %}bg-green-500{% else %}bg-red-500{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data" class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Seleccionar archivo Excel</label>
+                <input type="file" name="archivo" accept=".xlsx,.xls" required
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 file:mr-4 file:py-1 file:px-3 file:rounded file:bg-blue-600 file:text-white file:border-0">
+            </div>
+            <button type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 font-bold py-2 rounded-lg transition">
+                📥 Importar Jugadores
+            </button>
+        </form>
+
+        <div class="mt-6 bg-gray-800 p-4 rounded-xl text-sm text-gray-400">
+            <p class="font-bold text-white mb-2">Categorías reconocidas:</p>
+            <p>TC, Master, Juvenil, Infantil, Sub13, Sub15, Sub19, Sub20</p>
+            <p class="mt-1">Formatos múltiples: <span class="text-green-400">TC Y MASTER</span>, <span class="text-green-400">TC E INFANTIL</span>, <span class="text-green-400">TC Y SUB 15</span></p>
+        </div>
+    </div>
+</body>
+</html>

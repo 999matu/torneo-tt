@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block title %}Fixture - {{ torneo.nombre }}{% endblock %}
+{% block page_title %}Fixture — {{ torneo.nombre }}{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-4">
+        {% if torneo.logo %}
+        <img src="{{ url_for('static', filename='uploads/' + torneo.logo) }}" class="w-10 h-10 rounded-lg object-contain bg-gray-700 p-1">
+        {% endif %}
+        <div>
+            <h2 class="text-2xl font-bold">{{ torneo.nombre }}</h2>
+            <p class="text-gray-400 text-sm">Fixture y Grupos</p>
+        </div>
+    </div>
+    {% if partidos_generados %}
+    <form method="POST" action="{{ url_for('main.generar_fixture', torneo_id=torneo.id) }}" class="flex gap-2 items-center">
+        <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+        <select name="num_grupos" class="bg-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {% for n in range(1,7) %}<option value="{{ n }}" {% if n == grupos|length %}selected{% endif %}>{{ n }} grupo{{ 's' if n > 1 }}</option>{% endfor %}
+        </select>
+        <button type="submit" onclick="return confirm('¿Regenerar? Se perderán los resultados.')"
+            class="bg-yellow-600 hover:bg-yellow-700 text-sm px-4 py-2 rounded-lg font-bold transition">
+            🔄 Regenerar
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<!-- Tabs categorías -->
+<div class="flex flex-wrap gap-2 mb-6">
+    {% for item in cats_con_inscritos %}
+    <a href="{{ url_for('main.fixture', torneo_id=torneo.id, categoria=item.cat) }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold transition flex items-center gap-1.5
+        {% if categoria_actual == item.cat %}bg-blue-600 text-white{% else %}bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white{% endif %}">
+        {{ item.cat }}
+        <span class="{% if categoria_actual == item.cat %}bg-white text-blue-600{% else %}bg-gray-600 text-white{% endif %} text-xs rounded-full px-1.5 font-bold">
+            {{ item.count }}
+        </span>
+    </a>
+    {% endfor %}
+</div>
+
+{% if not partidos_generados %}
+<div class="bg-gray-800 rounded-xl p-6 mb-6 max-w-sm">
+    <h3 class="font-bold text-lg mb-1">⚙️ Generar Fixture</h3>
+    <p class="text-gray-400 text-sm mb-4">Categoría: <strong class="text-white">{{ categoria_actual }}</strong></p>
+    <form method="POST" action="{{ url_for('main.generar_fixture', torneo_id=torneo.id) }}" class="space-y-3">
+        <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+        <div>
+            <label class="text-gray-300 text-sm mb-1 block">Número de grupos</label>
+            <select name="num_grupos" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {% for n in range(1,7) %}<option value="{{ n }}" {% if n==2 %}selected{% endif %}>{{ n }} grupo{{ 's' if n > 1 }}</option>{% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-2.5 rounded-lg transition">
+            🎲 Generar Grupos y Partidos
+        </button>
+    </form>
+</div>
+
+{% else %}
+
+<!-- Tabs grupos -->
+<div class="flex flex-wrap gap-2 mb-4" id="grupo-tabs">
+    {% for grupo in grupos %}
+    <button onclick="mostrarGrupo({{ grupo.id }})"
+        id="tab-{{ grupo.id }}"
+        class="px-5 py-2 rounded-lg text-sm font-bold transition border-2
+        {% if loop.first %}border-blue-500 bg-blue-600 text-white{% else %}border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-white{% endif %}">
+        Grupo {{ grupo.numero }}
+        <span class="ml-1 text-xs opacity-75">({{ grupo.jugadores|length }})</span>
+    </button>
+    {% endfor %}
+</div>
+
+{% for grupo in grupos %}
+<div id="grupo-{{ grupo.id }}" class="grupo-panel {% if not loop.first %}hidden{% endif %}">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+        <!-- Posiciones -->
+        <div class="bg-gray-800 rounded-xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-700 flex items-center gap-2">
+                <span class="text-blue-400 font-bold text-sm">GRUPO {{ grupo.numero }}</span>
+                <span class="text-gray-500 text-sm">— Posiciones</span>
+            </div>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-gray-400 text-xs border-b border-gray-700">
+                        <th class="px-5 py-3 text-left">Pos</th>
+                        <th class="px-5 py-3 text-left">Jugador</th>
+                        <th class="px-5 py-3 text-center">PJ</th>
+                        <th class="px-5 py-3 text-center">PG</th>
+                        <th class="px-5 py-3 text-center">PP</th>
+                        <th class="px-5 py-3 text-center text-yellow-400 font-bold">Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set jugadores_sorted = grupo.jugadores|sort(attribute='partidos_ganados', reverse=True) %}
+                    {% for gj in jugadores_sorted %}
+                    <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
+                        <td class="px-5 py-3">
+                            {% if loop.index == 1 %}<span class="text-yellow-400 font-bold">1°</span>
+                            {% elif loop.index == 2 %}<span class="text-gray-300 font-bold">2°</span>
+                            {% elif loop.index == 3 %}<span class="text-orange-400 font-bold">3°</span>
+                            {% else %}<span class="text-gray-500">{{ loop.index }}°</span>{% endif %}
+                        </td>
+                        <td class="px-5 py-3 font-semibold">{{ gj.jugador.nombre }}</td>
+                        <td class="px-5 py-3 text-center text-gray-400">{{ gj.partidos_jugados }}</td>
+                        <td class="px-5 py-3 text-center text-green-400 font-bold">{{ gj.partidos_ganados }}</td>
+                        <td class="px-5 py-3 text-center text-red-400">{{ gj.partidos_jugados - gj.partidos_ganados }}</td>
+                        <td class="px-5 py-3 text-center text-yellow-400 font-bold">{{ gj.partidos_ganados * 2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Orden de Juego -->
+        <div class="bg-gray-800 rounded-xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-700 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-300 font-bold text-sm">📋 Orden de Juego</span>
+                    <span class="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">Grupo {{ grupo.numero }}</span>
+                </div>
+                {% set jugados = grupo_partidos[grupo.id]|selectattr('jugado')|list|length %}
+                {% set total = grupo_partidos[grupo.id]|length %}
+                <span class="text-xs text-gray-500">{{ jugados }}/{{ total }} jugados</span>
+            </div>
+            <div class="divide-y divide-gray-700">
+                {% for partido in grupo_partidos[grupo.id] %}
+                <div class="px-4 py-3 hover:bg-gray-700 transition {% if not partido.jugado %}cursor-pointer{% endif %}"
+                    {% if not partido.jugado %}onclick="abrirModal({{ partido.id }}, '{{ partido.jugador1.nombre }}', '{{ partido.jugador2.nombre }}', {{ partido.jugador1_id }}, {{ partido.jugador2_id }})"{% endif %}>
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold
+                            {% if partido.jugado %}bg-green-800 text-green-300{% else %}bg-gray-700 text-gray-400{% endif %}">
+                            {{ loop.index }}
+                        </div>
+                        <div class="flex-1 flex items-center gap-2 min-w-0">
+                            <span class="text-sm font-semibold truncate
+                                {% if partido.ganador_id == partido.jugador1_id %}text-green-400
+                                {% elif partido.jugado %}text-red-400
+                                {% else %}text-white{% endif %}">
+                                {{ partido.jugador1.nombre }}
+                            </span>
+                            <div class="flex-shrink-0">
+                                {% if partido.jugado and partido.resultado %}
+                                <span class="text-xs bg-gray-600 text-gray-200 px-2 py-0.5 rounded font-mono whitespace-nowrap">{{ partido.resultado }}</span>
+                                {% else %}
+                                <span class="text-gray-600 text-xs font-bold">vs</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-sm font-semibold truncate text-right
+                                {% if partido.ganador_id == partido.jugador2_id %}text-green-400
+                                {% elif partido.jugado %}text-red-400
+                                {% else %}text-white{% endif %}">
+                                {{ partido.jugador2.nombre }}
+                            </span>
+                        </div>
+                        {% if partido.jugado %}
+                        <span class="text-green-400 text-xs flex-shrink-0">✓</span>
+                        {% else %}
+                        <span class="text-blue-400 text-xs flex-shrink-0 whitespace-nowrap">▶ Arbitrar</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- MODAL ÁRBITRO EN VIVO -->
+<div id="modal-resultado" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span class="text-red-400 text-xs font-bold uppercase tracking-wider">En Vivo</span>
+            </div>
+            <span class="text-gray-500 text-xs font-bold" id="modal-set-label">Set 1</span>
+        </div>
+
+        <!-- Marcador principal -->
+        <div class="grid grid-cols-3 gap-3 mb-4">
+            <!-- Jugador 1 -->
+            <div class="text-center">
+                <p class="text-xs text-gray-400 mb-2 truncate font-bold" id="live-nombre-j1"></p>
+                <button onclick="sumarPunto(1)"
+                    class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 rounded-xl py-8 text-6xl font-black transition touch-manipulation select-none"
+                    id="btn-punto-j1">
+                    <span id="live-pts1">0</span>
+                </button>
+                <p class="text-gray-500 text-xs mt-2">Sets: <span id="live-sets1" class="text-white font-bold">0</span></p>
+            </div>
+
+            <!-- Centro -->
+            <div class="flex flex-col items-center justify-center gap-2">
+                <span class="text-gray-600 font-bold text-lg">VS</span>
+                <div id="historial-sets" class="space-y-1 text-center"></div>
+                <button onclick="deshacerPunto()"
+                    class="mt-2 text-xs text-gray-500 hover:text-yellow-400 border border-gray-600 hover:border-yellow-600 px-3 py-1.5 rounded-lg transition">
+                    ↩ Deshacer
+                </button>
+            </div>
+
+            <!-- Jugador 2 -->
+            <div class="text-center">
+                <p class="text-xs text-gray-400 mb-2 truncate font-bold" id="live-nombre-j2"></p>
+                <button onclick="sumarPunto(2)"
+                    class="w-full bg-red-600 hover:bg-red-500 active:scale-95 rounded-xl py-8 text-6xl font-black transition touch-manipulation select-none"
+                    id="btn-punto-j2">
+                    <span id="live-pts2">0</span>
+                </button>
+                <p class="text-gray-500 text-xs mt-2">Sets: <span id="live-sets2" class="text-white font-bold">0</span></p>
+            </div>
+        </div>
+
+        <!-- Ganador -->
+        <div id="ganador-display" class="hidden bg-green-900 bg-opacity-40 border border-green-600 rounded-xl p-3 mb-4 text-center">
+            <span class="text-green-400 font-bold text-lg">🏆 Ganador: <span id="ganador-nombre"></span></span>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="cerrarModal()"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold transition text-sm">
+                Cancelar
+            </button>
+            <form method="POST" id="modal-form" class="flex-1">
+                <input type="hidden" name="categoria" id="f-categoria">
+                <input type="hidden" name="ganador_id" id="f-ganador">
+                <input type="hidden" name="resultado" id="f-resultado">
+                <button type="submit" id="btn-guardar" disabled
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 rounded-lg font-bold transition text-sm">
+                    ✓ Confirmar y Guardar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+socket.on('resultado_actualizado', function(data) {
+    if (data.torneo_id === {{ torneo.id }} && data.categoria === '{{ categoria_actual }}') {
+        setTimeout(() => location.reload(), 400);
+    }
+});
+
+function mostrarGrupo(id) {
+    document.querySelectorAll('.grupo-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('[id^="tab-"]').forEach(t => {
+        t.classList.remove('border-blue-500','bg-blue-600','text-white');
+        t.classList.add('border-gray-600','bg-gray-800','text-gray-400');
+    });
+    document.getElementById('grupo-' + id).classList.remove('hidden');
+    const tab = document.getElementById('tab-' + id);
+    tab.classList.add('border-blue-500','bg-blue-600','text-white');
+    tab.classList.remove('border-gray-600','bg-gray-800','text-gray-400');
+}
+
+let estado = {
+    partidoId: null, torneoId: {{ torneo.id }}, categoria: '{{ categoria_actual }}',
+    j1Id: null, j2Id: null, j1Nombre: '', j2Nombre: '',
+    pts1: 0, pts2: 0, sets1: 0, sets2: 0,
+    setActual: 1, historial: [],
+    ganadorId: null, historialPuntos: []
+};
+const SETS_GANAR = 3;
+const PTS_SET = {{ torneo.puntos_por_set }};
+
+function abrirModal(partidoId, j1nombre, j2nombre, j1id, j2id) {
+    estado = { ...estado,
+        partidoId, j1Id: j1id, j2Id: j2id,
+        j1Nombre: j1nombre, j2Nombre: j2nombre,
+        pts1: 0, pts2: 0, sets1: 0, sets2: 0,
+        setActual: 1, historial: [], ganadorId: null, historialPuntos: []
+    };
+    document.getElementById('live-nombre-j1').textContent = j1nombre;
+    document.getElementById('live-nombre-j2').textContent = j2nombre;
+    document.getElementById('modal-form').action = '/torneos/{{ torneo.id }}/fixture/resultado/' + partidoId;
+    document.getElementById('f-categoria').value = '{{ categoria_actual }}';
+    actualizarUI();
+    document.getElementById('modal-resultado').classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('modal-resultado').classList.add('hidden');
+}
+
+function sumarPunto(jugador) {
+    if (estado.ganadorId) return;
+    estado.historialPuntos.push({
+        pts1: estado.pts1, pts2: estado.pts2,
+        sets1: estado.sets1, sets2: estado.sets2,
+        historial: JSON.parse(JSON.stringify(estado.historial))
+    });
+    if (jugador === 1) estado.pts1++;
+    else estado.pts2++;
+    verificarSet();
+    actualizarUI();
+    emitirLive();
+}
+
+function deshacerPunto() {
+    if (estado.historialPuntos.length === 0) return;
+    const prev = estado.historialPuntos.pop();
+    estado.pts1 = prev.pts1; estado.pts2 = prev.pts2;
+    estado.sets1 = prev.sets1; estado.sets2 = prev.sets2;
+    estado.historial = prev.historial;
+    estado.setActual = estado.historial.length + 1;
+    estado.ganadorId = null;
+    actualizarUI();
+    emitirLive();
+}
+
+function verificarSet() {
+    const p1 = estado.pts1, p2 = estado.pts2;
+    let ganadorSet = null;
+    if (p1 >= PTS_SET && p1 - p2 >= 2) ganadorSet = 1;
+    else if (p2 >= PTS_SET && p2 - p1 >= 2) ganadorSet = 2;
+    if (ganadorSet) {
+        estado.historial.push({ p1, p2 });
+        if (ganadorSet === 1) estado.sets1++;
+        else estado.sets2++;
+        estado.pts1 = 0; estado.pts2 = 0;
+        estado.setActual++;
+        if (estado.sets1 >= SETS_GANAR) estado.ganadorId = estado.j1Id;
+        else if (estado.sets2 >= SETS_GANAR) estado.ganadorId = estado.j2Id;
+    }
+}
+
+function actualizarUI() {
+    document.getElementById('live-pts1').textContent = estado.pts1;
+    document.getElementById('live-pts2').textContent = estado.pts2;
+    document.getElementById('live-sets1').textContent = estado.sets1;
+    document.getElementById('live-sets2').textContent = estado.sets2;
+    document.getElementById('modal-set-label').textContent = 'Set ' + estado.setActual;
+
+    const hist = document.getElementById('historial-sets');
+    hist.innerHTML = estado.historial.map(s =>
+        `<div class="text-xs font-mono text-gray-400 bg-gray-700 px-2 py-0.5 rounded">${s.p1}-${s.p2}</div>`
+    ).join('');
+
+    const ganadorDiv = document.getElementById('ganador-display');
+    const btnGuardar = document.getElementById('btn-guardar');
+    const btnJ1 = document.getElementById('btn-punto-j1');
+    const btnJ2 = document.getElementById('btn-punto-j2');
+
+    if (estado.ganadorId) {
+        const nombreGanador = estado.ganadorId === estado.j1Id ? estado.j1Nombre : estado.j2Nombre;
+        document.getElementById('ganador-nombre').textContent = nombreGanador;
+        ganadorDiv.classList.remove('hidden');
+        btnGuardar.disabled = false;
+        document.getElementById('f-ganador').value = estado.ganadorId;
+        const sets1 = estado.sets1, sets2 = estado.sets2;
+        const resStr = sets1 + '-' + sets2 + ' (' + estado.historial.map(s => s.p1 + '-' + s.p2).join(', ') + ')';
+        document.getElementById('f-resultado').value = resStr;
+        btnJ1.disabled = true; btnJ2.disabled = true;
+        btnJ1.classList.add('opacity-40'); btnJ2.classList.add('opacity-40');
+    } else {
+        ganadorDiv.classList.add('hidden');
+        btnGuardar.disabled = true;
+        btnJ1.disabled = false; btnJ2.disabled = false;
+        btnJ1.classList.remove('opacity-40'); btnJ2.classList.remove('opacity-40');
+    }
+
+    // Resaltar quién va ganando el set
+    btnJ1.classList.toggle('ring-4', estado.pts1 > estado.pts2);
+    btnJ1.classList.toggle('ring-white', estado.pts1 > estado.pts2);
+    btnJ2.classList.toggle('ring-4', estado.pts2 > estado.pts1);
+    btnJ2.classList.toggle('ring-white', estado.pts2 > estado.pts1);
+}
+
+function emitirLive() {
+    fetch('/torneos/{{ torneo.id }}/fixture/live/' + estado.partidoId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            categoria: estado.categoria,
+            j1: estado.j1Nombre, j2: estado.j2Nombre,
+            pts1: estado.pts1, pts2: estado.pts2,
+            sets1: estado.sets1, sets2: estado.sets2,
+            set_actual: estado.setActual,
+            historial: estado.historial
+        })
+    });
+}
+
+document.getElementById('modal-resultado').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+</script>
+{% endblock %}

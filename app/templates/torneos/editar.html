@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Editar Torneo{% endblock %}
+{% block page_title %}Editar Torneo{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <h2 class="text-2xl font-bold mb-6">Editar: {{ torneo.nombre }}</h2>
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+
+        <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <h3 class="font-bold text-blue-400 text-sm uppercase tracking-wider">Información del Torneo</h3>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Nombre *</label>
+                <input type="text" name="nombre" value="{{ torneo.nombre }}" required
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Descripción</label>
+                <textarea name="descripcion" rows="2" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ torneo.descripcion or '' }}</textarea>
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Logo (dejar vacío para mantener)</label>
+                {% if torneo.logo %}
+                <img src="{{ url_for('static', filename='uploads/' + torneo.logo) }}" class="w-16 h-16 rounded-lg object-contain bg-gray-700 p-1 mb-2">
+                {% endif %}
+                <input type="file" name="logo" accept="image/*"
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 file:mr-4 file:py-1 file:px-3 file:rounded file:bg-blue-600 file:text-white file:border-0">
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <h3 class="font-bold text-blue-400 text-sm uppercase tracking-wider">Configuración de Partidos</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Sets por partido</label>
+                    <select name="sets_por_partido" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2">
+                        <option value="3" {% if torneo.sets_por_partido==3 %}selected{% endif %}>Mejor de 3</option>
+                        <option value="5" {% if torneo.sets_por_partido==5 %}selected{% endif %}>Mejor de 5</option>
+                        <option value="7" {% if torneo.sets_por_partido==7 %}selected{% endif %}>Mejor de 7</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Puntos por set</label>
+                    <input type="number" name="puntos_por_set" value="{{ torneo.puntos_por_set }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2">
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <input type="checkbox" name="pasan_segundo" {% if torneo.pasan_segundo %}checked{% endif %} class="w-4 h-4 accent-blue-500">
+                <label class="text-gray-300 text-sm">¿También pasa el 2° de cada grupo?</label>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <h3 class="font-bold text-blue-400 text-sm uppercase tracking-wider">Tabla de Puntos Ranking</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-gray-300 text-sm mb-1 block">🥇 Campeón</label>
+                    <input type="number" name="pts_campeon" value="{{ torneo.pts_campeon }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🥈 Finalista</label>
+                    <input type="number" name="pts_finalista" value="{{ torneo.pts_finalista }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🥉 Semifinalista</label>
+                    <input type="number" name="pts_semifinalista" value="{{ torneo.pts_semifinalista }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🏅 Cuartos</label>
+                    <input type="number" name="pts_cuartos" value="{{ torneo.pts_cuartos }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">✅ Victoria grupos</label>
+                    <input type="number" name="pts_grupos_victoria" value="{{ torneo.pts_grupos_victoria }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2"></div>
+                <div><label class="text-gray-300 text-sm mb-1 block">🎽 Participación</label>
+                    <input type="number" name="pts_participacion" value="{{ torneo.pts_participacion }}" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2"></div>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-700 font-bold py-3 rounded-lg transition text-lg">
+            💾 Guardar Cambios
+        </button>
+    </form>
+</div>
+{% endblock %}

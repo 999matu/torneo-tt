@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}Bracket - {{ torneo.nombre }}{% endblock %}
+{% block page_title %}Bracket Eliminatorio — {{ torneo.nombre }}{% endblock %}
+
+{% block content %}
+
+{% macro render_partido(partido, fase) %}
+<div class="w-56 bg-gray-800 rounded-xl overflow-hidden border
+    {% if fase == 'final' %}border-yellow-700
+    {% elif fase == 'tercer_lugar' %}border-orange-700
+    {% elif partido.jugado %}border-gray-600
+    {% else %}border-gray-700{% endif %}
+    relative shadow-lg">
+
+    {% if not partido.jugado and partido.jugador1_id and partido.jugador2_id %}
+    <button onclick="abrirModal({{ partido.id }}, '{{ partido.jugador1.nombre }}', '{{ partido.jugador2.nombre }}', {{ partido.jugador1_id }}, {{ partido.jugador2_id }})"
+        class="absolute top-2 right-2 text-xs px-2 py-0.5 rounded font-bold transition
+        {% if fase == 'final' %}bg-yellow-600 hover:bg-yellow-500
+        {% elif fase == 'tercer_lugar' %}bg-orange-600 hover:bg-orange-500
+        {% else %}bg-blue-600 hover:bg-blue-500{% endif %}">
+        ▶ Arbitrar
+    </button>
+    {% endif %}
+
+    <div class="px-4 py-3 border-b border-gray-700
+        {% if partido.ganador_id and partido.ganador_id == partido.jugador1_id %}
+            {% if fase == 'final' %}bg-yellow-900 bg-opacity-30{% else %}bg-green-900 bg-opacity-20{% endif %}
+        {% elif partido.jugado %}bg-red-900 bg-opacity-10{% endif %}">
+        <p class="text-sm font-bold truncate pr-16
+            {% if partido.ganador_id == partido.jugador1_id %}
+                {% if fase == 'final' %}text-yellow-400{% else %}text-green-400{% endif %}
+            {% elif partido.jugado %}text-red-400
+            {% else %}text-white{% endif %}">
+            {% if partido.jugador1 %}
+                {{ partido.jugador1.nombre }}
+                {% if partido.ganador_id == partido.jugador1_id %}
+                    {% if fase == 'final' %}🥇{% elif fase == 'tercer_lugar' %}🥉{% else %}✓{% endif %}
+                {% endif %}
+            {% else %}
+                <span class="text-gray-600 italic text-xs">Por definir</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="px-4 py-3
+        {% if partido.ganador_id and partido.ganador_id == partido.jugador2_id %}
+            {% if fase == 'final' %}bg-yellow-900 bg-opacity-30{% else %}bg-green-900 bg-opacity-20{% endif %}
+        {% elif partido.jugado %}bg-red-900 bg-opacity-10{% endif %}">
+        <p class="text-sm font-bold truncate pr-16
+            {% if partido.ganador_id == partido.jugador2_id %}
+                {% if fase == 'final' %}text-yellow-400{% else %}text-green-400{% endif %}
+            {% elif partido.jugado %}text-red-400
+            {% else %}text-white{% endif %}">
+            {% if partido.jugador2 %}
+                {{ partido.jugador2.nombre }}
+                {% if partido.ganador_id == partido.jugador2_id %}
+                    {% if fase == 'final' %}🥇{% elif fase == 'tercer_lugar' %}🥉{% else %}✓{% endif %}
+                {% endif %}
+            {% else %}
+                <span class="text-gray-600 italic text-xs">Por definir</span>
+            {% endif %}
+        </p>
+    </div>
+
+    {% if partido.resultado %}
+    <div class="px-4 py-1.5 bg-gray-900 text-center border-t border-gray-700">
+        <span class="text-xs font-mono text-gray-400">{{ partido.resultado }}</span>
+    </div>
+    {% endif %}
+
+</div>
+{% endmacro %}
+
+<!-- HEADER -->
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-4">
+        {% if torneo.logo %}
+        <img src="{{ url_for('static', filename='uploads/' + torneo.logo) }}" class="w-10 h-10 rounded-lg object-contain bg-gray-700 p-1">
+        {% endif %}
+        <div>
+            <h2 class="text-2xl font-bold">{{ torneo.nombre }}</h2>
+            <p class="text-gray-400 text-sm">Fase Eliminatoria</p>
+        </div>
+    </div>
+    {% if bracket_generado %}
+    <form method="POST" action="{{ url_for('main.generar_bracket', torneo_id=torneo.id) }}"
+        onsubmit="return confirm('¿Regenerar bracket? Se perderán los resultados.')">
+        <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+        <button type="submit" class="bg-yellow-700 hover:bg-yellow-600 text-sm px-4 py-2 rounded-lg font-bold transition">
+            🔄 Regenerar
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<!-- TABS CATEGORÍAS -->
+<div class="flex flex-wrap gap-2 mb-6">
+    {% for item in cats_con_inscritos %}
+    <a href="{{ url_for('main.bracket', torneo_id=torneo.id, categoria=item.cat) }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold transition
+        {% if categoria_actual == item.cat %}bg-blue-600 text-white{% else %}bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white{% endif %}">
+        {{ item.cat }}
+    </a>
+    {% endfor %}
+</div>
+
+{% if not bracket_generado %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gray-800 rounded-xl p-5">
+        <h3 class="font-bold mb-4 text-blue-400">📋 Clasificados desde Grupos</h3>
+        {% if clasificados %}
+        <div class="space-y-2">
+            {% for c in clasificados %}
+            <div class="flex items-center gap-3 bg-gray-700 rounded-lg px-4 py-2.5">
+                <span class="text-xs font-bold w-6 {% if c.pos == '1°' %}text-yellow-400{% else %}text-gray-400{% endif %}">{{ c.pos }}</span>
+                <span class="text-xs text-gray-500 w-10">Gr.{{ c.grupo }}</span>
+                <span class="font-semibold text-sm">{{ c.jugador.nombre }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No hay grupos completados aún.</p>
+        {% endif %}
+    </div>
+    <div class="bg-gray-800 rounded-xl p-5">
+        <h3 class="font-bold mb-2">⚙️ Generar Bracket</h3>
+        <p class="text-gray-400 text-sm mb-4">Se arma automáticamente cruzando primeros y segundos de cada grupo.</p>
+        <form method="POST" action="{{ url_for('main.generar_bracket', torneo_id=torneo.id) }}">
+            <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-3 rounded-lg transition">
+                🏆 Generar Bracket Eliminatorio
+            </button>
+        </form>
+    </div>
+</div>
+
+{% else %}
+
+<!-- BRACKET VISUAL -->
+<div class="overflow-x-auto pb-6">
+<div class="flex gap-6 min-w-max items-start py-4 px-2">
+
+    {% if partidos_bracket['cuartos'] %}
+    <div class="flex flex-col gap-6">
+        <p class="text-center text-xs text-gray-500 uppercase tracking-widest font-bold">Cuartos de Final</p>
+        {% for partido in partidos_bracket['cuartos'] %}
+        {{ render_partido(partido, 'cuartos') }}
+        {% endfor %}
+    </div>
+    <div class="flex items-center self-center text-gray-600 text-3xl mt-6">›</div>
+    {% endif %}
+
+    {% if partidos_bracket['semi'] %}
+    <div class="flex flex-col gap-6 {% if partidos_bracket['cuartos'] %}mt-16{% endif %}">
+        <p class="text-center text-xs text-gray-500 uppercase tracking-widest font-bold">Semifinales</p>
+        {% for partido in partidos_bracket['semi'] %}
+        {{ render_partido(partido, 'semi') }}
+        {% endfor %}
+    </div>
+    <div class="flex items-center self-center text-gray-600 text-3xl mt-6">›</div>
+    {% endif %}
+
+    <div class="flex flex-col gap-8 {% if partidos_bracket['cuartos'] %}mt-32{% elif partidos_bracket['semi'] %}mt-16{% endif %}">
+        {% if partidos_bracket['final'] %}
+        <div>
+            <p class="text-center text-xs text-yellow-500 uppercase tracking-widest font-bold mb-3">🏆 Final</p>
+            {{ render_partido(partidos_bracket['final'][0], 'final') }}
+        </div>
+        {% endif %}
+        {% if partidos_bracket['tercer_lugar'] %}
+        <div>
+            <p class="text-center text-xs text-orange-500 uppercase tracking-widest font-bold mb-3">🥉 3er Lugar</p>
+            {{ render_partido(partidos_bracket['tercer_lugar'][0], 'tercer_lugar') }}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+</div>
+{% endif %}
+
+<!-- MODAL ÁRBITRO EN VIVO -->
+<div id="modal-resultado" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span class="text-red-400 text-xs font-bold uppercase tracking-wider">En Vivo</span>
+            </div>
+            <span class="text-gray-500 text-xs font-bold" id="modal-set-label">Set 1</span>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="text-center">
+                <p class="text-xs text-gray-400 mb-2 truncate font-bold" id="live-nombre-j1"></p>
+                <button onclick="sumarPunto(1)" id="btn-punto-j1"
+                    class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 rounded-xl py-8 text-6xl font-black transition touch-manipulation select-none">
+                    <span id="live-pts1">0</span>
+                </button>
+                <p class="text-gray-500 text-xs mt-2">Sets: <span id="live-sets1" class="text-white font-bold">0</span></p>
+            </div>
+            <div class="flex flex-col items-center justify-center gap-2">
+                <span class="text-gray-600 font-bold">VS</span>
+                <div id="historial-sets" class="space-y-1 text-center"></div>
+                <button onclick="deshacerPunto()"
+                    class="mt-2 text-xs text-gray-500 hover:text-yellow-400 border border-gray-600 hover:border-yellow-600 px-3 py-1.5 rounded-lg transition">
+                    ↩ Deshacer
+                </button>
+            </div>
+            <div class="text-center">
+                <p class="text-xs text-gray-400 mb-2 truncate font-bold" id="live-nombre-j2"></p>
+                <button onclick="sumarPunto(2)" id="btn-punto-j2"
+                    class="w-full bg-red-600 hover:bg-red-500 active:scale-95 rounded-xl py-8 text-6xl font-black transition touch-manipulation select-none">
+                    <span id="live-pts2">0</span>
+                </button>
+                <p class="text-gray-500 text-xs mt-2">Sets: <span id="live-sets2" class="text-white font-bold">0</span></p>
+            </div>
+        </div>
+        <div id="ganador-display" class="hidden bg-green-900 bg-opacity-40 border border-green-600 rounded-xl p-3 mb-4 text-center">
+            <span class="text-green-400 font-bold text-lg">🏆 Ganador: <span id="ganador-nombre"></span></span>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="cerrarModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold transition text-sm">Cancelar</button>
+            <form method="POST" id="modal-form" class="flex-1">
+                <input type="hidden" name="categoria" id="f-categoria" value="{{ categoria_actual }}">
+                <input type="hidden" name="ganador_id" id="f-ganador">
+                <input type="hidden" name="resultado" id="f-resultado">
+                <button type="submit" id="btn-guardar" disabled
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 rounded-lg font-bold transition text-sm">
+                    ✓ Confirmar y Guardar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+socket.on('resultado_actualizado', function(data) {
+    if (data.torneo_id === {{ torneo.id }}) setTimeout(() => location.reload(), 400);
+});
+
+let estado = {
+    partidoId: null, torneoId: {{ torneo.id }}, categoria: '{{ categoria_actual }}',
+    j1Id: null, j2Id: null, j1Nombre: '', j2Nombre: '',
+    pts1: 0, pts2: 0, sets1: 0, sets2: 0,
+    setActual: 1, historial: [], ganadorId: null, historialPuntos: []
+};
+const SETS_GANAR = 3;
+const PTS_SET = {{ torneo.puntos_por_set }};
+
+function abrirModal(partidoId, j1nombre, j2nombre, j1id, j2id) {
+    estado = { ...estado, partidoId, j1Id: j1id, j2Id: j2id,
+        j1Nombre: j1nombre, j2Nombre: j2nombre,
+        pts1:0, pts2:0, sets1:0, sets2:0,
+        setActual:1, historial:[], ganadorId:null, historialPuntos:[] };
+    document.getElementById('live-nombre-j1').textContent = j1nombre;
+    document.getElementById('live-nombre-j2').textContent = j2nombre;
+    document.getElementById('modal-form').action = '/torneos/{{ torneo.id }}/bracket/resultado/' + partidoId;
+    actualizarUI();
+    document.getElementById('modal-resultado').classList.remove('hidden');
+}
+
+function cerrarModal() { document.getElementById('modal-resultado').classList.add('hidden'); }
+
+function sumarPunto(jugador) {
+    if (estado.ganadorId) return;
+    estado.historialPuntos.push({
+        pts1:estado.pts1, pts2:estado.pts2, sets1:estado.sets1, sets2:estado.sets2,
+        historial:JSON.parse(JSON.stringify(estado.historial))
+    });
+    if (jugador===1) estado.pts1++; else estado.pts2++;
+    verificarSet(); actualizarUI(); emitirLive();
+}
+
+function deshacerPunto() {
+    if (!estado.historialPuntos.length) return;
+    const prev = estado.historialPuntos.pop();
+    estado.pts1=prev.pts1; estado.pts2=prev.pts2;
+    estado.sets1=prev.sets1; estado.sets2=prev.sets2;
+    estado.historial=prev.historial;
+    estado.setActual=estado.historial.length+1;
+    estado.ganadorId=null;
+    actualizarUI(); emitirLive();
+}
+
+function verificarSet() {
+    const p1=estado.pts1, p2=estado.pts2;
+    let g=null;
+    if (p1>=PTS_SET && p1-p2>=2) g=1;
+    else if (p2>=PTS_SET && p2-p1>=2) g=2;
+    if (g) {
+        estado.historial.push({p1,p2});
+        if (g===1) estado.sets1++; else estado.sets2++;
+        estado.pts1=0; estado.pts2=0; estado.setActual++;
+        if (estado.sets1>=SETS_GANAR) estado.ganadorId=estado.j1Id;
+        else if (estado.sets2>=SETS_GANAR) estado.ganadorId=estado.j2Id;
+    }
+}
+
+function actualizarUI() {
+    document.getElementById('live-pts1').textContent = estado.pts1;
+    document.getElementById('live-pts2').textContent = estado.pts2;
+    document.getElementById('live-sets1').textContent = estado.sets1;
+    document.getElementById('live-sets2').textContent = estado.sets2;
+    document.getElementById('modal-set-label').textContent = 'Set ' + estado.setActual;
+    document.getElementById('historial-sets').innerHTML = estado.historial.map(s =>
+        `<div class="text-xs font-mono text-gray-400 bg-gray-700 px-2 py-0.5 rounded">${s.p1}-${s.p2}</div>`).join('');
+    const ganadorDiv = document.getElementById('ganador-display');
+    const btnJ1 = document.getElementById('btn-punto-j1');
+    const btnJ2 = document.getElementById('btn-punto-j2');
+    const btnG = document.getElementById('btn-guardar');
+    if (estado.ganadorId) {
+        document.getElementById('ganador-nombre').textContent = estado.ganadorId===estado.j1Id ? estado.j1Nombre : estado.j2Nombre;
+        ganadorDiv.classList.remove('hidden'); btnG.disabled=false;
+        document.getElementById('f-ganador').value=estado.ganadorId;
+        document.getElementById('f-resultado').value=estado.sets1+'-'+estado.sets2+' ('+estado.historial.map(s=>s.p1+'-'+s.p2).join(', ')+')';
+        btnJ1.disabled=true; btnJ2.disabled=true;
+        btnJ1.classList.add('opacity-40'); btnJ2.classList.add('opacity-40');
+    } else {
+        ganadorDiv.classList.add('hidden'); btnG.disabled=true;
+        btnJ1.disabled=false; btnJ2.disabled=false;
+        btnJ1.classList.remove('opacity-40'); btnJ2.classList.remove('opacity-40');
+    }
+    btnJ1.classList.toggle('ring-4', estado.pts1>estado.pts2);
+    btnJ1.classList.toggle('ring-white', estado.pts1>estado.pts2);
+    btnJ2.classList.toggle('ring-4', estado.pts2>estado.pts1);
+    btnJ2.classList.toggle('ring-white', estado.pts2>estado.pts1);
+}
+
+function emitirLive() {
+    fetch('/torneos/{{ torneo.id }}/bracket/live/' + estado.partidoId, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ categoria:estado.categoria, j1:estado.j1Nombre, j2:estado.j2Nombre,
+            pts1:estado.pts1, pts2:estado.pts2, sets1:estado.sets1, sets2:estado.sets2,
+            set_actual:estado.setActual, historial:estado.historial })
+    });
+}
+
+document.getElementById('modal-resultado').addEventListener('click', function(e) {
+    if (e.target===this) cerrarModal();
+});
+</script>
+{% endblock %}

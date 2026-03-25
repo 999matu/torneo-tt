@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Jugador - Asociación Nueva Talagante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <nav class="bg-gray-800 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold">🏓 Asociación Nueva Talagante</h1>
+        <a href="{{ url_for('main.jugadores') }}" class="text-gray-400 hover:text-white text-sm">← Volver</a>
+    </nav>
+    <div class="p-8 max-w-lg mx-auto">
+        <h2 class="text-2xl font-bold mb-6">Editar Jugador</h2>
+        <form method="POST" class="bg-gray-800 p-6 rounded-xl space-y-4">
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Nombre completo</label>
+                <input type="text" name="nombre" value="{{ jugador.nombre }}" required
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Categoría</label>
+                <select name="categoria" required
+                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {% for cat in categorias %}
+                    <option value="{{ cat }}" {% if jugador.categoria == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit"
+                class="w-full bg-yellow-600 hover:bg-yellow-700 font-bold py-2 rounded-lg transition">
+                Actualizar Jugador
+            </button>
+        </form>
+    </div>
+</body>
+</html>

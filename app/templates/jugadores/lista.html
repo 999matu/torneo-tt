@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Jugadores - Asociación Nueva Talagante{% endblock %}
+{% block page_title %}Jugadores{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h2 class="text-2xl font-bold">Jugadores</h2>
+        <p class="text-gray-400 text-sm">Nómina de jugadores registrados</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('main.importar_jugadores') }}"
+            class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+            📥 Importar Excel
+        </a>
+        <a href="{{ url_for('main.nuevo_jugador') }}"
+            class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+            + Nuevo Jugador
+        </a>
+    </div>
+</div>
+
+<!-- Filtros categoría -->
+<div class="flex flex-wrap gap-2 mb-6">
+    <a href="{{ url_for('main.jugadores', categoria='todas') }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold transition
+        {% if categoria_actual == 'todas' %}bg-blue-600 text-white{% else %}bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white{% endif %}">
+        Todas
+    </a>
+    {% for cat in categorias %}
+    <a href="{{ url_for('main.jugadores', categoria=cat) }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold transition
+        {% if categoria_actual == cat %}bg-blue-600 text-white{% else %}bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white{% endif %}">
+        {{ cat }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Tabla -->
+<div class="bg-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-gray-750 border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">#</th>
+                <th class="px-6 py-3 text-left">Nombre</th>
+                <th class="px-6 py-3 text-left">Categoría</th>
+                <th class="px-6 py-3 text-left">Puntos Ranking</th>
+                <th class="px-6 py-3 text-left">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if agrupado %}
+                {% for item in jugadores %}
+                <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
+                    <td class="px-6 py-3 text-gray-500">{{ loop.index }}</td>
+                    <td class="px-6 py-3 font-semibold">{{ item.jugador.nombre }}</td>
+                    <td class="px-6 py-3">
+                        <div class="flex flex-wrap gap-1">
+                            {% for cat in item.categorias %}
+                            <span class="text-xs px-2 py-0.5 rounded-full font-medium
+                                {% if cat == 'TC' %}bg-blue-900 text-blue-300
+                                {% elif cat == 'Master' %}bg-purple-900 text-purple-300
+                                {% elif cat == 'Juvenil' %}bg-green-900 text-green-300
+                                {% elif cat == 'Infantil' %}bg-yellow-900 text-yellow-300
+                                {% elif cat == 'Sub13' %}bg-pink-900 text-pink-300
+                                {% elif cat == 'Sub15' %}bg-orange-900 text-orange-300
+                                {% elif cat == 'Sub19' %}bg-teal-900 text-teal-300
+                                {% elif cat == 'Sub20' %}bg-red-900 text-red-300
+                                {% else %}bg-gray-700 text-gray-300{% endif %}">
+                                {{ cat }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-3 text-yellow-400 font-bold">{{ item.jugador.puntos_ranking }} pts</td>
+                    <td class="px-6 py-3">
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('main.editar_jugador', id=item.jugador.id) }}"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-xs px-3 py-1 rounded-lg font-bold transition">Editar</a>
+                            <a href="{{ url_for('main.eliminar_jugador', id=item.jugador.id) }}"
+                                onclick="return confirm('¿Eliminar?')"
+                                class="bg-red-600 hover:bg-red-700 text-xs px-3 py-1 rounded-lg font-bold transition">Eliminar</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                {% for jugador in jugadores %}
+                <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
+                    <td class="px-6 py-3 text-gray-500">{{ loop.index }}</td>
+                    <td class="px-6 py-3 font-semibold">{{ jugador.nombre }}</td>
+                    <td class="px-6 py-3">
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium
+                            {% if jugador.categoria == 'TC' %}bg-blue-900 text-blue-300
+                            {% elif jugador.categoria == 'Master' %}bg-purple-900 text-purple-300
+                            {% elif jugador.categoria == 'Juvenil' %}bg-green-900 text-green-300
+                            {% elif jugador.categoria == 'Infantil' %}bg-yellow-900 text-yellow-300
+                            {% elif jugador.categoria == 'Sub13' %}bg-pink-900 text-pink-300
+                            {% elif jugador.categoria == 'Sub15' %}bg-orange-900 text-orange-300
+                            {% elif jugador.categoria == 'Sub19' %}bg-teal-900 text-teal-300
+                            {% elif jugador.categoria == 'Sub20' %}bg-red-900 text-red-300
+                            {% else %}bg-gray-700 text-gray-300{% endif %}">
+                            {{ jugador.categoria }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3 text-yellow-400 font-bold">{{ jugador.puntos_ranking }} pts</td>
+                    <td class="px-6 py-3">
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('main.editar_jugador', id=jugador.id) }}"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-xs px-3 py-1 rounded-lg font-bold transition">Editar</a>
+                            <a href="{{ url_for('main.eliminar_jugador', id=jugador.id) }}"
+                                onclick="return confirm('¿Eliminar?')"
+                                class="bg-red-600 hover:bg-red-700 text-xs px-3 py-1 rounded-lg font-bold transition">Eliminar</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+    {% if not jugadores %}
+    <div class="text-center text-gray-500 py-12">No hay jugadores registrados.</div>
+    {% endif %}
+</div>
+{% endblock %}

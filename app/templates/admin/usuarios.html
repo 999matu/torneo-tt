@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Usuarios - Admin{% endblock %}
+{% block page_title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-6">👥 Gestión de Usuarios</h2>
+
+{% if solicitudes %}
+<div class="bg-yellow-900 bg-opacity-20 border border-yellow-800 rounded-xl p-5 mb-6">
+    <h3 class="font-bold text-yellow-400 mb-4">⏳ Solicitudes pendientes ({{ solicitudes|length }})</h3>
+    <div class="space-y-3">
+        {% for s in solicitudes %}
+        <div class="bg-gray-800 rounded-lg p-4">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <p class="font-medium">{{ s.username }}</p>
+                    <p class="text-gray-400 text-sm">Nombre: <strong class="text-white">{{ s.nombre_jugador }}</strong></p>
+                    <p class="text-gray-500 text-xs">{{ s.creado.strftime('%d/%m/%Y %H:%M') }}</p>
+                </div>
+                <form method="POST" action="{{ url_for('main.aprobar_usuario', solicitud_id=s.id) }}" class="flex gap-2 items-center">
+                    <select name="jugador_id" required class="bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">— Vincular a jugador —</option>
+                        {% for j in jugadores_sin_cuenta %}
+                        <option value="{{ j.id }}">{{ j.nombre }} ({{ j.categoria }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-xs px-3 py-2 rounded-lg font-bold transition">✅ Aprobar</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Crear usuario -->
+<div class="bg-gray-800 rounded-xl p-5 mb-6">
+    <h3 class="font-bold mb-4">➕ Crear usuario manualmente</h3>
+    <form method="POST" action="{{ url_for('main.crear_usuario') }}" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <input type="text" name="username" placeholder="Usuario" required
+            class="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="password" name="password" placeholder="Contraseña" required
+            class="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select name="rol" class="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm">
+            <option value="jugador">Jugador</option>
+            <option value="arbitro">Árbitro</option>
+            <option value="admin">Admin</option>
+            <option value="espectador">Espectador</option>
+        </select>
+        <select name="jugador_id" class="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm">
+            <option value="">— Sin vincular —</option>
+            {% for j in jugadores_sin_cuenta %}
+            <option value="{{ j.id }}">{{ j.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="col-span-2 md:col-span-4 bg-blue-600 hover:bg-blue-700 font-bold py-2 rounded-lg text-sm transition">
+            Crear Usuario
+        </button>
+    </form>
+</div>
+
+<!-- Tabla usuarios -->
+<div class="bg-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
+                <th class="px-5 py-3 text-left">Usuario</th>
+                <th class="px-5 py-3 text-left">Rol</th>
+                <th class="px-5 py-3 text-left">Jugador vinculado</th>
+                <th class="px-5 py-3 text-left">Estado</th>
+                <th class="px-5 py-3 text-left">Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
+                <td class="px-5 py-3 font-medium">{{ u.username }}</td>
+                <td class="px-5 py-3">
+                    <span class="text-xs px-2 py-0.5 rounded-full
+                        {% if u.rol == 'admin' %}bg-red-900 text-red-300
+                        {% elif u.rol == 'arbitro' %}bg-purple-900 text-purple-300
+                        {% elif u.rol == 'jugador' %}bg-blue-900 text-blue-300
+                        {% else %}bg-gray-700 text-gray-300{% endif %}">
+                        {{ u.rol }}
+                    </span>
+                </td>
+                <td class="px-5 py-3 text-gray-400">{% if u.jugador %}{{ u.jugador.nombre }}{% else %}—{% endif %}</td>
+                <td class="px-5 py-3">
+                    <span class="text-xs px-2 py-0.5 rounded-full {% if u.activo %}bg-green-900 text-green-300{% else %}bg-red-900 text-red-300{% endif %}">
+                        {% if u.activo %}Activo{% else %}Inactivo{% endif %}
+                    </span>
+                </td>
+                <td class="px-5 py-3">
+                    {% if u.username != 'admin' %}
+                    <a href="{{ url_for('main.desactivar_usuario', usuario_id=u.id) }}"
+                        class="text-xs px-3 py-1 rounded-lg transition {% if u.activo %}bg-red-700 hover:bg-red-600{% else %}bg-green-700 hover:bg-green-600{% endif %}">
+                        {% if u.activo %}Desactivar{% else %}Activar{% endif %}
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

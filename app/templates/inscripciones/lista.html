@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Inscripciones - {{ torneo.nombre }}{% endblock %}
+{% block page_title %}Inscripciones — {{ torneo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+    {% if torneo.logo %}
+    <img src="{{ url_for('static', filename='uploads/' + torneo.logo) }}" class="w-10 h-10 rounded-lg object-contain bg-gray-700 p-1">
+    {% endif %}
+    <div>
+        <h2 class="text-2xl font-bold">{{ torneo.nombre }}</h2>
+        <p class="text-gray-400 text-sm">Gestión de Inscripciones y Seeds</p>
+    </div>
+</div>
+
+<!-- Filtros categoría -->
+<div class="flex flex-wrap gap-2 mb-6">
+    {% for cat in categorias %}
+    <a href="{{ url_for('main.inscripciones', torneo_id=torneo.id, categoria=cat) }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold transition flex items-center gap-1.5
+        {% if categoria_actual == cat %}bg-blue-600 text-white{% else %}bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white{% endif %}">
+        {{ cat }}
+        {% if resumen[cat] > 0 %}
+        <span class="{% if categoria_actual == cat %}bg-white text-blue-600{% else %}bg-gray-600 text-white{% endif %} text-xs rounded-full px-1.5 font-bold">{{ resumen[cat] }}</span>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Inscritos -->
+    <div class="bg-gray-800 rounded-xl p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-lg">
+                Inscritos <span class="text-blue-400">{{ categoria_actual }}</span>
+                <span class="text-gray-500 font-normal text-sm">({{ inscritos|length }})</span>
+            </h3>
+            <form method="POST" action="{{ url_for('main.agregar_todos_categoria', torneo_id=torneo.id) }}">
+                <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+                <button type="submit" onclick="return confirm('¿Inscribir a todos?')"
+                    class="bg-green-700 hover:bg-green-600 text-xs px-3 py-1.5 rounded-lg font-bold transition">
+                    + Todos
+                </button>
+            </form>
+        </div>
+
+        {% if inscritos %}
+        <div class="space-y-2">
+            {% for insc, jug in inscritos %}
+            <div class="flex items-center justify-between bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-2 transition">
+                <div class="flex items-center gap-3">
+                    <form method="POST" action="{{ url_for('main.toggle_seed', torneo_id=torneo.id, inscripcion_id=insc.id) }}">
+                        <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+                        <button type="submit" class="text-lg hover:scale-125 transition-transform" title="Toggle seed">
+                            {% if insc.es_seed %}⭐{% else %}☆{% endif %}
+                        </button>
+                    </form>
+                    <div>
+                        <p class="font-medium text-sm">{{ jug.nombre }}</p>
+                        {% if insc.es_seed %}<span class="text-yellow-400 text-xs">Cabeza de serie</span>{% endif %}
+                    </div>
+                </div>
+                <a href="{{ url_for('main.eliminar_inscripcion', torneo_id=torneo.id, inscripcion_id=insc.id, categoria=categoria_actual) }}"
+                    onclick="return confirm('¿Remover a {{ jug.nombre }}?')"
+                    class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-900 hover:bg-opacity-30 transition">✕</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm text-center py-8">No hay jugadores inscritos aún.</p>
+        {% endif %}
+
+        {% set seeds = inscritos|selectattr('0.es_seed')|list %}
+        {% if seeds %}
+        <div class="mt-4 p-3 bg-yellow-900 bg-opacity-20 rounded-lg border border-yellow-800">
+            <p class="text-yellow-400 text-xs font-bold mb-1">⭐ Seeds: {{ seeds|length }}</p>
+            {% for insc, jug in seeds %}
+            <span class="text-yellow-300 text-xs">{{ jug.nombre }}{% if not loop.last %}, {% endif %}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Disponibles -->
+    <div class="bg-gray-800 rounded-xl p-5">
+        <h3 class="font-bold text-lg mb-4">
+            Disponibles <span class="text-green-400">{{ categoria_actual }}</span>
+            <span class="text-gray-500 font-normal text-sm">({{ disponibles|length }})</span>
+        </h3>
+        {% if disponibles %}
+        <div class="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {% for jug in disponibles %}
+            <div class="flex items-center justify-between bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-2 transition">
+                <span class="text-sm font-medium">{{ jug.nombre }}</span>
+                <form method="POST" action="{{ url_for('main.agregar_inscripcion', torneo_id=torneo.id) }}">
+                    <input type="hidden" name="jugador_id" value="{{ jug.id }}">
+                    <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold transition">
+                        + Inscribir
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm text-center py-8">
+            {% if inscritos|length > 0 %}Todos inscritos ✅{% else %}Sin jugadores en esta categoría.{% endif %}
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Resumen total -->
+<div class="mt-6 bg-gray-800 rounded-xl p-5">
+    <h3 class="font-bold mb-3">📊 Resumen total</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {% for cat in categorias %}{% if resumen[cat] > 0 %}
+        <div class="bg-gray-700 rounded-lg p-3 text-center hover:bg-gray-600 transition">
+            <p class="text-blue-400 font-bold text-lg">{{ resumen[cat] }}</p>
+            <p class="text-gray-400 text-xs">{{ cat }}</p>
+        </div>
+        {% endif %}{% endfor %}
+    </div>
+</div>
+{% endblock %}

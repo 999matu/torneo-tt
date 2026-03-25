@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking — TorneoTT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<div class="bg-gray-900 border-b border-gray-800 px-6 py-4">
+    <div class="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-black">🏓</div>
+            <div>
+                <h1 class="text-xl font-black">Ranking TorneoTT</h1>
+                <p class="text-gray-500 text-xs">Puntos acumulados por categoría</p>
+            </div>
+        </div>
+        <a href="{{ url_for('main.panel_publico') }}"
+            class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 transition">
+            📺 Panel en Vivo
+        </a>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- Filtros -->
+    <div class="flex flex-wrap gap-3 mb-6">
+        <!-- Tabs categorías -->
+        <div class="flex flex-wrap gap-2">
+            {% for cat in categorias %}
+            <a href="?categoria={{ cat }}{% if torneo_id_actual %}&torneo_id={{ torneo_id_actual }}{% endif %}"
+                class="px-4 py-1.5 rounded-full text-sm font-semibold transition
+                {% if categoria_actual == cat %}bg-blue-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white{% endif %}">
+                {{ cat }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Filtro por torneo -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <a href="?categoria={{ categoria_actual }}"
+            class="px-3 py-1 rounded-lg text-xs font-semibold transition
+            {% if not torneo_id_actual %}bg-purple-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700{% endif %}">
+            Todos los torneos
+        </a>
+        {% for t in torneos %}
+        <a href="?categoria={{ categoria_actual }}&torneo_id={{ t.id }}"
+            class="px-3 py-1 rounded-lg text-xs font-semibold transition
+            {% if torneo_id_actual == t.id|string %}bg-purple-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700{% endif %}">
+            {{ t.nombre }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if ranking %}
+    <!-- Podio top 3 -->
+    {% if ranking|length >= 3 %}
+    <div class="grid grid-cols-3 gap-3 mb-8">
+
+        <!-- 2do lugar -->
+        <div class="flex flex-col items-center justify-end pt-8">
+            <div class="w-14 h-14 rounded-full bg-gray-600 flex items-center justify-center text-2xl mb-2">🥈</div>
+            <p class="text-sm font-bold text-center text-gray-300 truncate w-full text-center">{{ ranking[1][0].nombre }}</p>
+            <div class="mt-2 w-full bg-gray-700 rounded-t-xl py-6 text-center">
+                <p class="text-2xl font-black text-gray-300">{{ ranking[1][1] }}</p>
+                <p class="text-xs text-gray-500">pts</p>
+            </div>
+        </div>
+
+        <!-- 1er lugar -->
+        <div class="flex flex-col items-center justify-end">
+            <div class="w-16 h-16 rounded-full bg-yellow-500 bg-opacity-20 border-2 border-yellow-500 flex items-center justify-center text-3xl mb-2">🥇</div>
+            <p class="text-sm font-bold text-center text-yellow-400 truncate w-full text-center">{{ ranking[0][0].nombre }}</p>
+            <div class="mt-2 w-full bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded-t-xl py-8 text-center">
+                <p class="text-3xl font-black text-yellow-400">{{ ranking[0][1] }}</p>
+                <p class="text-xs text-yellow-600">pts</p>
+            </div>
+        </div>
+
+        <!-- 3er lugar -->
+        <div class="flex flex-col items-center justify-end pt-12">
+            <div class="w-12 h-12 rounded-full bg-orange-900 bg-opacity-30 flex items-center justify-center text-xl mb-2">🥉</div>
+            <p class="text-sm font-bold text-center text-orange-400 truncate w-full text-center">{{ ranking[2][0].nombre }}</p>
+            <div class="mt-2 w-full bg-gray-700 rounded-t-xl py-4 text-center">
+                <p class="text-xl font-black text-orange-400">{{ ranking[2][1] }}</p>
+                <p class="text-xs text-gray-500">pts</p>
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+
+    <!-- Tabla completa -->
+    <div class="bg-gray-800 rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-700 flex items-center justify-between">
+            <span class="font-bold">📊 Tabla Completa — {{ categoria_actual }}</span>
+            <span class="text-gray-500 text-sm">{{ ranking|length }} jugadores</span>
+        </div>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-500 text-xs border-b border-gray-700 uppercase tracking-wider">
+                    <th class="px-5 py-3 text-left w-12">Pos</th>
+                    <th class="px-5 py-3 text-left">Jugador</th>
+                    <th class="px-5 py-3 text-center">Torneos</th>
+                    <th class="px-5 py-3 text-center text-yellow-400">Puntos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for jugador, total_pts, torneos_jug in ranking %}
+                <tr class="border-b border-gray-700 hover:bg-gray-750 transition
+                    {% if loop.index == 1 %}bg-yellow-900 bg-opacity-10{% endif %}">
+                    <td class="px-5 py-3.5">
+                        {% if loop.index == 1 %}<span class="text-yellow-400 font-bold text-lg">🥇</span>
+                        {% elif loop.index == 2 %}<span class="text-gray-300 font-bold text-lg">🥈</span>
+                        {% elif loop.index == 3 %}<span class="text-orange-400 font-bold text-lg">🥉</span>
+                        {% else %}<span class="text-gray-500 font-bold">{{ loop.index }}°</span>{% endif %}
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300">
+                                {{ jugador.nombre[0].upper() }}
+                            </div>
+                            <div>
+                                <p class="font-semibold {% if loop.index == 1 %}text-yellow-400{% endif %}">{{ jugador.nombre }}</p>
+                                {% if jugador.club %}
+                                <p class="text-gray-500 text-xs">{{ jugador.club }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3.5 text-center text-gray-400">{{ torneos_jug }}</td>
+                    <td class="px-5 py-3.5 text-center">
+                        <span class="text-yellow-400 font-black text-lg">{{ total_pts }}</span>
+                        <span class="text-gray-600 text-xs ml-1">pts</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-20">
+        <p class="text-5xl mb-4">🏓</p>
+        <p class="text-gray-400 text-lg">No hay puntos registrados para <strong>{{ categoria_actual }}</strong> aún.</p>
+        <p class="text-gray-600 text-sm mt-2">Los puntos se acumulan al completar partidos y torneos.</p>
+    </div>
+    {% endif %}
+
+</div>
+</body>
+</html>
