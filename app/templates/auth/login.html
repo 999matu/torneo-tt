@@ -1,47 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Asociación Nueva Talagante</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar Sesión – Rankevo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --primary: #6C63FF; --accent: #00D4AA; --dark: #07070F; --card: rgba(19,19,31,0.9); --text: #E8E8F2; --muted: #6B6B90; --border: rgba(108,99,255,0.2); }
+  body { font-family: 'Inter', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+  .login-wrap { position: relative; z-index: 1; width: 100%; max-width: 420px; }
+  .logo { text-align: center; margin-bottom: 36px; }
+  .logo-text { font-size: 2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(120deg,#fff 30%,var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-text em { font-style: normal; -webkit-text-fill-color: var(--primary); }
+  .logo-sub { font-size: .78rem; color: var(--muted); margin-top: 6px; letter-spacing: .5px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 40px 36px; backdrop-filter: blur(20px); }
+  .card h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
+  .card p { font-size: .85rem; color: var(--muted); margin-bottom: 28px; }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: .78rem; font-weight: 600; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 8px; }
+  .field input { width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-size: .9rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color .2s; }
+  .field input:focus { border-color: var(--primary); background: rgba(108,99,255,.05); }
+  .btn-login { width: 100%; background: linear-gradient(135deg, var(--primary), #4F46E5); border: none; padding: 14px; border-radius: 10px; color: #fff; font-size: .95rem; font-weight: 700; cursor: pointer; margin-top: 8px; transition: opacity .2s, transform .2s; font-family: 'Inter', sans-serif; }
+  .btn-login:hover { opacity: .88; transform: translateY(-1px); }
+  .alert { padding: 11px 16px; border-radius: 9px; font-size: .83rem; font-weight: 500; margin-bottom: 20px; }
+  .alert-danger { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #fca5a5; }
+  .alert-success { background: rgba(0,212,170,.1); border: 1px solid rgba(0,212,170,.3); color: var(--accent); }
+  .divider { text-align: center; margin: 20px 0; font-size: .78rem; color: var(--muted); }
+  .btn-register { display: block; text-align: center; padding: 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); font-size: .85rem; font-weight: 600; text-decoration: none; transition: border-color .2s, color .2s; }
+  .btn-register:hover { border-color: var(--primary); color: var(--text); }
+  .back-link { display: block; text-align: center; margin-top: 20px; font-size: .78rem; color: var(--muted); text-decoration: none; transition: color .2s; }
+  .back-link:hover { color: var(--text); }
+</style>
 </head>
-<body class="bg-gray-900 flex items-center justify-center min-h-screen">
-    <div class="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h1 class="text-3xl font-bold text-white text-center mb-2">🏓 Asociación Nueva Talagante</h1>
-        <p class="text-gray-400 text-center mb-6">Inicia sesión para continuar</p>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-                <div class="mb-4 p-3 rounded-lg text-sm
-                    {% if category == 'danger' %}bg-red-500 text-white
-                    {% elif category == 'success' %}bg-green-500 text-white
-                    {% else %}bg-yellow-500 text-black{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endwith %}
-
-        <form method="POST" class="space-y-4">
-            <div>
-                <label class="text-gray-300 text-sm mb-1 block">Usuario</label>
-                <input type="text" name="username" required
-                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="text-gray-300 text-sm mb-1 block">Contraseña</label>
-                <input type="password" name="password" required
-                    class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <button type="submit"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition">
-                Ingresar
-            </button>
-        </form>
-
-        <p class="text-center text-gray-500 text-sm mt-4">
-            ¿Eres jugador? <a href="{{ url_for('auth.registro') }}" class="text-blue-400 hover:underline">Solicitar cuenta</a>
-        </p>
-    </div>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="login-wrap">
+  <div class="logo">
+    <div class="logo-text">Rank<em>evo</em></div>
+    <div class="logo-sub">Sistema de Torneos · Tenis de Mesa</div>
+  </div>
+  <div class="card">
+    <h2>Bienvenido de vuelta</h2>
+    <p>Ingresa tus credenciales para continuar</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}{% endif %}{% endwith %}
+    <form method="POST">
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" name="username" placeholder="tu_usuario" required autofocus>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-login">Iniciar sesión →</button>
+    </form>
+    <div class="divider">¿No tienes cuenta?</div>
+    <a href="{{ url_for('auth.registro') }}" class="btn-register">Solicitar acceso</a>
+  </div>
+  <a href="{{ url_for('main.index') }}" class="back-link">← Volver al inicio</a>
+</div>
+<script>
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+const N=60, MAX_D=110;
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+class P {
+  constructor(){ this.x=Math.random()*W; this.y=Math.random()*H; this.vx=(Math.random()-.5)*.25; this.vy=(Math.random()-.5)*.25; this.r=Math.random()*1.2+.4; this.a=Math.random()*.3+.1; }
+  update(){ this.x+=this.vx; this.y+=this.vy; if(this.x<0)this.x=W; if(this.x>W)this.x=0; if(this.y<0)this.y=H; if(this.y>H)this.y=0; }
+  draw(){ ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fillStyle=`rgba(140,130,255,${this.a})`; ctx.fill(); }
+}
+for(let i=0;i<N;i++) particles.push(new P());
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<MAX_D){ ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.strokeStyle=`rgba(108,99,255,${(1-d/MAX_D)*.12})`; ctx.lineWidth=.6; ctx.stroke(); }
+    }
+  }
+  particles.forEach(p=>{ p.update(); p.draw(); });
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
 </body>
 </html>
