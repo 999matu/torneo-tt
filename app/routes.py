@@ -8,21 +8,17 @@ import openpyxl
 import os
 
 
-
 # ─── BLUEPRINTS ─────────────────────────────────────────
 auth = Blueprint('auth', __name__)
 main = Blueprint('main', __name__)
-
 
 
 # ─── ALLOWED FILES ──────────────────────────────────────
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 
 
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 
 # ─── MAPA DE CATEGORÍAS ─────────────────────────────────
@@ -34,7 +30,6 @@ MAPA_CATEGORIAS = {
 }
 
 
-
 def parsear_categorias(texto):
     cats = []
     texto = texto.upper().replace(' E ', ' Y ')
@@ -43,7 +38,6 @@ def parsear_categorias(texto):
         if parte in MAPA_CATEGORIAS:
             cats.append(MAPA_CATEGORIAS[parte])
     return cats
-
 
 
 # ─── AUTH ROUTES ────────────────────────────────────────
@@ -66,13 +60,11 @@ def login():
     return render_template('auth/login.html')
 
 
-
 @auth.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
-
 
 
 @auth.route('/registro', methods=['GET', 'POST'])
@@ -97,7 +89,6 @@ def registro():
     return render_template('auth/registro.html')
 
 
-
 # ─── SETUP ADMIN ────────────────────────────────────────
 @main.route('/setup')
 def setup():
@@ -116,7 +107,6 @@ def setup():
     return redirect(url_for('auth.login'))
 
 
-
 # ─── MIGRACIÓN BD ───────────────────────────────────────
 @main.route('/migrar-db')
 def migrar_db():
@@ -129,27 +119,33 @@ def migrar_db():
         return f'ℹ️ {str(e)}'
 
 
-
 # ─── MAIN ROUTES ────────────────────────────────────────
 @main.route('/')
 def index():
-    from app.models import Torneo, PuntosRanking
+    from app.models import Torneo, PuntosRanking, Partido
     torneos_activos = Torneo.query.filter_by(activo=True).order_by(Torneo.fecha.desc()).limit(5).all()
+    total_torneos   = Torneo.query.filter_by(activo=True).count()
+    total_jugadores = Jugador.query.filter_by(activo=True).count()
+    total_partidos  = Partido.query.filter_by(jugado=True).count()
     ranking_top = db.session.query(
         Jugador,
         db.func.sum(PuntosRanking.puntos).label('total_puntos')
     ).join(PuntosRanking, Jugador.id == PuntosRanking.jugador_id)\
      .group_by(Jugador.id)\
      .order_by(db.desc('total_puntos')).limit(5).all()
-    return render_template('landing.html', torneos=torneos_activos, ranking_top=ranking_top)
-
+    return render_template('landing.html',
+        torneos=torneos_activos,
+        ranking_top=ranking_top,
+        total_torneos=total_torneos,
+        total_jugadores=total_jugadores,
+        total_partidos=total_partidos
+    )
 
 
 @main.route('/dashboard')
 @login_required
 def dashboard():
     return render_template('dashboard.html', usuario=current_user)
-
 
 
 # ─── JUGADORES ──────────────────────────────────────────
@@ -173,7 +169,6 @@ def jugadores():
                                categoria_actual=categoria, agrupado=False)
 
 
-
 @main.route('/jugadores/nuevo', methods=['GET', 'POST'])
 @login_required
 def nuevo_jugador():
@@ -191,7 +186,6 @@ def nuevo_jugador():
     return render_template('jugadores/nuevo.html', categorias=CATEGORIAS)
 
 
-
 @main.route('/jugadores/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_jugador(id):
@@ -205,7 +199,6 @@ def editar_jugador(id):
     return render_template('jugadores/editar.html', jugador=jugador, categorias=CATEGORIAS)
 
 
-
 @main.route('/jugadores/eliminar/<int:id>')
 @login_required
 def eliminar_jugador(id):
@@ -214,7 +207,6 @@ def eliminar_jugador(id):
     db.session.commit()
     flash(f'Jugador {jugador.nombre_completo()} eliminado.', 'warning')
     return redirect(url_for('main.jugadores'))
-
 
 
 @main.route('/jugadores/importar', methods=['GET', 'POST'])
@@ -256,11 +248,9 @@ def importar_jugadores():
     return render_template('jugadores/importar.html')
 
 
-
 # ─── TORNEOS ────────────────────────────────────────────
 from app.models import Torneo
 from flask import current_app
-
 
 
 @main.route('/torneos')
@@ -268,7 +258,6 @@ from flask import current_app
 def torneos():
     lista = Torneo.query.order_by(Torneo.fecha.desc()).all()
     return render_template('torneos/lista.html', torneos=lista)
-
 
 
 @main.route('/torneos/nuevo', methods=['GET', 'POST'])
@@ -301,7 +290,6 @@ def nuevo_torneo():
     return render_template('torneos/nuevo.html')
 
 
-
 @main.route('/torneos/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_torneo(id):
@@ -330,7 +318,6 @@ def editar_torneo(id):
     return render_template('torneos/editar.html', torneo=torneo)
 
 
-
 @main.route('/torneos/eliminar/<int:id>')
 @login_required
 def eliminar_torneo(id):
@@ -341,10 +328,8 @@ def eliminar_torneo(id):
     return redirect(url_for('main.torneos'))
 
 
-
 # ─── INSCRIPCIONES ──────────────────────────────────────
 from app.models import Inscripcion
-
 
 
 @main.route('/torneos/<int:torneo_id>/inscripciones')
@@ -368,7 +353,6 @@ def inscripciones(torneo_id):
         categorias=CATEGORIAS, categoria_actual=categoria, resumen=resumen)
 
 
-
 @main.route('/torneos/<int:torneo_id>/inscripciones/agregar', methods=['POST'])
 @login_required
 def agregar_inscripcion(torneo_id):
@@ -379,7 +363,6 @@ def agregar_inscripcion(torneo_id):
         db.session.add(Inscripcion(torneo_id=torneo_id, jugador_id=jugador_id, categoria=categoria, es_seed=False))
         db.session.commit()
     return redirect(url_for('main.inscripciones', torneo_id=torneo_id, categoria=categoria))
-
 
 
 @main.route('/torneos/<int:torneo_id>/inscripciones/eliminar/<int:inscripcion_id>')
@@ -393,7 +376,6 @@ def eliminar_inscripcion(torneo_id, inscripcion_id):
     return redirect(url_for('main.inscripciones', torneo_id=torneo_id, categoria=categoria))
 
 
-
 @main.route('/torneos/<int:torneo_id>/inscripciones/seed/<int:inscripcion_id>', methods=['POST'])
 @login_required
 def toggle_seed(torneo_id, inscripcion_id):
@@ -404,7 +386,6 @@ def toggle_seed(torneo_id, inscripcion_id):
     return redirect(url_for('main.inscripciones', torneo_id=torneo_id, categoria=categoria))
 
 
-
 @main.route('/torneos/<int:torneo_id>/inscripciones/solo-grupo/<int:inscripcion_id>', methods=['POST'])
 @login_required
 def toggle_solo_grupo(torneo_id, inscripcion_id):
@@ -413,7 +394,6 @@ def toggle_solo_grupo(torneo_id, inscripcion_id):
     inscripcion.solo_en_grupo = not inscripcion.solo_en_grupo
     db.session.commit()
     return redirect(url_for('main.inscripciones', torneo_id=torneo_id, categoria=categoria))
-
 
 
 @main.route('/torneos/<int:torneo_id>/inscripciones/agregar-todos', methods=['POST'])
@@ -432,10 +412,8 @@ def agregar_todos_categoria(torneo_id):
     return redirect(url_for('main.inscripciones', torneo_id=torneo_id, categoria=categoria))
 
 
-
 # ─── PERFIL JUGADOR ─────────────────────────────────────
 from app.models import SolicitudRegistro, Partido, PuntosRanking
-
 
 
 @main.route('/mi-perfil')
@@ -454,7 +432,6 @@ def mi_perfil():
     return render_template('perfil/mi_perfil.html',
         jugador=jugador, inscripciones=inscripciones,
         partidos=partidos, puntos=puntos, total_puntos=total_puntos)
-
 
 
 # ─── ADMIN USUARIOS ─────────────────────────────────────
@@ -476,7 +453,6 @@ def admin_usuarios():
         jugadores_sin_cuenta=jugadores_sin_cuenta)
 
 
-
 @main.route('/admin/usuarios/aprobar/<int:solicitud_id>', methods=['POST'])
 @login_required
 def aprobar_usuario(solicitud_id):
@@ -494,7 +470,6 @@ def aprobar_usuario(solicitud_id):
     db.session.commit()
     flash(f'Usuario {solicitud.username} aprobado.', 'success')
     return redirect(url_for('main.admin_usuarios'))
-
 
 
 @main.route('/admin/usuarios/crear', methods=['POST'])
@@ -519,7 +494,6 @@ def crear_usuario():
     return redirect(url_for('main.admin_usuarios'))
 
 
-
 @main.route('/admin/usuarios/desactivar/<int:usuario_id>')
 @login_required
 def desactivar_usuario(usuario_id):
@@ -532,12 +506,10 @@ def desactivar_usuario(usuario_id):
     return redirect(url_for('main.admin_usuarios'))
 
 
-
 # ─── FIXTURE ────────────────────────────────────────────
 from app.models import Grupo, GrupoJugador
 from app import socketio as sio
 import random
-
 
 
 def ordenar_partidos_sin_consecutivos(partidos):
@@ -559,7 +531,6 @@ def ordenar_partidos_sin_consecutivos(partidos):
             ordenados.append(p)
             ultimos_ids = {p.jugador1_id, p.jugador2_id}
     return ordenados
-
 
 
 @main.route('/torneos/<int:torneo_id>/fixture')
@@ -589,14 +560,12 @@ def fixture(torneo_id):
         grupo_partidos=grupo_partidos, categorias=CATEGORIAS)
 
 
-
 @main.route('/torneos/<int:torneo_id>/fixture/generar', methods=['POST'])
 @login_required
 def generar_fixture(torneo_id):
     torneo = Torneo.query.get_or_404(torneo_id)
     categoria = request.form.get('categoria')
     num_grupos = int(request.form.get('num_grupos', 2))
-
     for p in Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='grupos').all():
         db.session.delete(p)
     for g in Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).all():
@@ -604,36 +573,27 @@ def generar_fixture(torneo_id):
             db.session.delete(gj)
         db.session.delete(g)
     db.session.commit()
-
     inscritos = db.session.query(Inscripcion, Jugador)\
         .join(Jugador, Inscripcion.jugador_id == Jugador.id)\
         .filter(Inscripcion.torneo_id == torneo_id, Inscripcion.categoria == categoria).all()
-
     solos = [(i, j) for i, j in inscritos if getattr(i, 'solo_en_grupo', False)]
     seeds = [(i, j) for i, j in inscritos if i.es_seed and not getattr(i, 'solo_en_grupo', False)]
     no_seeds = [(i, j) for i, j in inscritos if not i.es_seed and not getattr(i, 'solo_en_grupo', False)]
     random.shuffle(no_seeds)
-
     total_grupos = num_grupos + len(solos)
     for n in range(1, total_grupos + 1):
         db.session.add(Grupo(torneo_id=torneo_id, categoria=categoria, numero=n))
     db.session.commit()
-
     grupos = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
     grupos_normales = grupos[:num_grupos]
     grupos_solos = grupos[num_grupos:]
-
     for idx, (insc, jug) in enumerate(solos):
         db.session.add(GrupoJugador(grupo_id=grupos_solos[idx].id, jugador_id=jug.id))
-
     for idx, (insc, jug) in enumerate(seeds):
         db.session.add(GrupoJugador(grupo_id=grupos_normales[idx % num_grupos].id, jugador_id=jug.id))
-
     for idx, (insc, jug) in enumerate(no_seeds):
         db.session.add(GrupoJugador(grupo_id=grupos_normales[idx % num_grupos].id, jugador_id=jug.id))
-
     db.session.commit()
-
     for grupo in grupos:
         jugadores_grupo = [gj.jugador_id for gj in grupo.jugadores]
         for i in range(len(jugadores_grupo)):
@@ -643,10 +603,8 @@ def generar_fixture(torneo_id):
                     grupo_id=grupo.id, jugador1_id=jugadores_grupo[i],
                     jugador2_id=jugadores_grupo[j], jugado=False))
     db.session.commit()
-
     flash(f'Fixture generado: {num_grupos} grupos + {len(solos)} grupo(s) individual(es) para {categoria}.', 'success')
     return redirect(url_for('main.fixture', torneo_id=torneo_id, categoria=categoria))
-
 
 
 @main.route('/torneos/<int:torneo_id>/fixture/resultado/<int:partido_id>', methods=['POST'])
@@ -678,7 +636,6 @@ def registrar_resultado(torneo_id, partido_id):
     return redirect(url_for('main.fixture', torneo_id=torneo_id, categoria=categoria))
 
 
-
 @main.route('/torneos/<int:torneo_id>/fixture/live/<int:partido_id>', methods=['POST'])
 @login_required
 def marcador_live(torneo_id, partido_id):
@@ -693,7 +650,6 @@ def marcador_live(torneo_id, partido_id):
         'historial': data.get('historial', [])
     })
     return {'ok': True}
-
 
 
 # ─── BRACKET ELIMINATORIO ───────────────────────────────
@@ -733,7 +689,6 @@ def bracket(torneo_id):
         bracket_generado=bracket_generado,
         clasificados=clasificados,
         categorias=CATEGORIAS)
-
 
 
 @main.route('/torneos/<int:torneo_id>/bracket/generar', methods=['POST'])
@@ -793,7 +748,6 @@ def generar_bracket(torneo_id):
     return redirect(url_for('main.bracket', torneo_id=torneo_id, categoria=categoria))
 
 
-
 @main.route('/torneos/<int:torneo_id>/bracket/resultado/<int:partido_id>', methods=['POST'])
 @login_required
 def resultado_bracket(torneo_id, partido_id):
@@ -847,7 +801,6 @@ def resultado_bracket(torneo_id, partido_id):
     return redirect(url_for('main.bracket', torneo_id=torneo_id, categoria=categoria))
 
 
-
 @main.route('/torneos/<int:torneo_id>/bracket/live/<int:partido_id>', methods=['POST'])
 @login_required
 def bracket_live(torneo_id, partido_id):
@@ -862,7 +815,6 @@ def bracket_live(torneo_id, partido_id):
         'historial': data.get('historial', [])
     })
     return {'ok': True}
-
 
 
 # ─── HELPERS RANKING ────────────────────────────────────
@@ -880,7 +832,6 @@ def _sumar_puntos(jugador_id, torneo_id, categoria, posicion, puntos):
         ))
 
 
-
 def _actualizar_puntos_globales(jugador_id):
     if not jugador_id:
         return
@@ -889,7 +840,6 @@ def _actualizar_puntos_globales(jugador_id):
     jugador = Jugador.query.get(jugador_id)
     if jugador:
         jugador.puntos_ranking = total
-
 
 
 # ─── RANKING PÚBLICO ────────────────────────────────────
@@ -922,7 +872,6 @@ def ranking():
         torneos=torneos_lista,
         torneo_id_actual=torneo_id
     )
-
 
 
 # ─── PANEL PÚBLICO ──────────────────────────────────────

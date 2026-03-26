@@ -1,285 +1,484 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel en Vivo — TorneoTT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <style>
-        body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        .pulso { animation: pulso 1.5s infinite; }
-        @keyframes pulso { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .partido-live { border-color: #ef4444 !important; box-shadow: 0 0 20px rgba(239,68,68,0.2); }
-        .partido-terminado { opacity: 0.75; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Público – Rankevo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #6C63FF; --accent: #00D4AA;
+    --dark: #07070F; --dark2: #0D0D1A;
+    --card: rgba(19,19,31,0.85); --text: #E8E8F2;
+    --muted: #6B6B90; --border: rgba(108,99,255,0.15);
+    --gold: #F5C542; --silver: #B0B8C9; --bronze: #C97D4A;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background: var(--dark); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+  #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:.5; }
+
+  /* ── NAV ── */
+  nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:16px 40px; display:flex; align-items:center; justify-content:space-between; background:rgba(7,7,15,0.95); backdrop-filter:blur(24px); border-bottom:1px solid var(--border); }
+  .logo { font-size:1.3rem; font-weight:900; letter-spacing:-1px; background:linear-gradient(120deg,#fff 30%,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .logo em { font-style:normal; -webkit-text-fill-color:var(--primary); }
+  .nav-badge { display:flex; align-items:center; gap:8px; font-size:.75rem; font-weight:600; color:var(--accent); letter-spacing:.5px; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); animation:blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .nav-right { display:flex; gap:10px; }
+  .nav-btn { background:none; border:1px solid var(--border); padding:7px 18px; border-radius:7px; color:var(--muted); font-size:.8rem; font-weight:500; cursor:pointer; text-decoration:none; transition:border-color .2s,color .2s; }
+  .nav-btn:hover { border-color:var(--primary); color:var(--text); }
+
+  /* ── LAYOUT ── */
+  .page { position:relative; z-index:1; padding: 90px 24px 60px; max-width:1240px; margin:0 auto; }
+
+  /* ── SELECTORS ── */
+  .selectors { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:32px; }
+  .sel-group { display:flex; flex-direction:column; gap:6px; }
+  .sel-label { font-size:.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  select { background:var(--card); border:1px solid var(--border); color:var(--text); padding:9px 16px; border-radius:8px; font-size:.85rem; font-family:'Inter',sans-serif; cursor:pointer; outline:none; }
+  select:focus { border-color:var(--primary); }
+
+  /* ── TABS ── */
+  .tabs { display:flex; gap:4px; margin-bottom:28px; border-bottom:1px solid var(--border); }
+  .tab { padding:10px 22px; font-size:.85rem; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:color .2s,border-color .2s; background:none; border-top:none; border-left:none; border-right:none; font-family:'Inter',sans-serif; }
+  .tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* ── CARDS ── */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; backdrop-filter:blur(16px); overflow:hidden; }
+  .card-header { padding:16px 24px; background:rgba(108,99,255,.06); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .card-title { font-size:.85rem; font-weight:700; letter-spacing:.5px; }
+  .card-badge { font-size:.7rem; font-weight:700; padding:4px 10px; border-radius:20px; background:rgba(108,99,255,.15); color:var(--primary); }
+
+  /* ── GRUPOS GRID ── */
+  .grupos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+
+  /* ── TABLA GRUPO ── */
+  .grupo-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+  .grupo-table th { padding:10px 16px; text-align:left; font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); background:rgba(108,99,255,.04); }
+  .grupo-table td { padding:10px 16px; border-top:1px solid rgba(255,255,255,.04); }
+  .grupo-table tr:hover td { background:rgba(255,255,255,.02); }
+  .player-av { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,var(--primary),#4F46E5); font-size:.65rem; font-weight:800; color:#fff; margin-right:8px; flex-shrink:0; }
+  .player-name { display:flex; align-items:center; }
+  .pts-badge { font-weight:800; color:var(--accent); }
+  .pos-1 { color:var(--gold); font-weight:800; }
+  .pos-2 { color:var(--silver); font-weight:800; }
+
+  /* ── PARTIDOS GRUPO ── */
+  .partidos-list { padding:12px 0; }
+  .partido-item { display:flex; align-items:center; gap:12px; padding:10px 20px; border-top:1px solid rgba(255,255,255,.04); font-size:.82rem; transition:background .2s; }
+  .partido-item:hover { background:rgba(255,255,255,.02); }
+  .partido-item:first-child { border-top:none; }
+  .pj-name { flex:1; font-weight:500; }
+  .pj-name.ganador { font-weight:700; color:var(--accent); }
+  .pj-vs { font-size:.7rem; font-weight:700; color:var(--muted); padding:0 8px; }
+  .pj-result { font-size:.75rem; font-weight:700; color:var(--muted); min-width:60px; text-align:center; background:rgba(255,255,255,.04); padding:3px 8px; border-radius:5px; }
+  .pj-result.jugado { color:var(--text); }
+  .pj-pending { font-size:.7rem; color:var(--muted); font-style:italic; }
+
+  /* ── BRACKET ── */
+  .bracket-wrap { overflow-x:auto; padding-bottom:16px; }
+  .bracket { display:flex; gap:40px; align-items:flex-start; min-width:700px; padding:16px; }
+  .bracket-col { display:flex; flex-direction:column; gap:20px; }
+  .bracket-col-title { font-size:.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin-bottom:4px; }
+  .bracket-match { background:rgba(108,99,255,.06); border:1px solid var(--border); border-radius:10px; width:200px; overflow:hidden; }
+  .bracket-player { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; font-size:.82rem; font-weight:500; border-bottom:1px solid rgba(255,255,255,.04); }
+  .bracket-player:last-child { border-bottom:none; }
+  .bracket-player.ganador { background:rgba(0,212,170,.06); color:var(--accent); font-weight:700; }
+  .bracket-player.vacio { color:var(--muted); font-style:italic; }
+  .bp-pts { font-weight:800; font-size:.8rem; }
+
+  /* ── LIVE MARCADOR ── */
+  .live-section { margin-bottom:28px; }
+  .live-card { background:linear-gradient(135deg,rgba(108,99,255,.1),rgba(0,212,170,.05)); border:1px solid rgba(108,99,255,.3); border-radius:16px; padding:28px 32px; text-align:center; position:relative; overflow:hidden; }
+  .live-card::before { content:'EN VIVO'; position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:.65rem; font-weight:800; letter-spacing:3px; color:var(--accent); }
+  .live-players { display:flex; align-items:center; justify-content:center; gap:24px; margin-top:16px; }
+  .live-player { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .live-player-name { font-size:.9rem; font-weight:700; max-width:120px; text-align:center; line-height:1.2; }
+  .live-score { font-size:3.5rem; font-weight:900; letter-spacing:-3px; background:linear-gradient(120deg,#fff,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; min-width:60px; text-align:center; }
+  .live-vs { font-size:.8rem; font-weight:700; color:var(--muted); }
+  .live-sets { display:flex; gap:8px; margin-top:16px; justify-content:center; }
+  .set-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); padding:4px 12px; border-radius:20px; font-size:.75rem; font-weight:700; color:var(--muted); }
+  .set-chip.activo { background:rgba(108,99,255,.15); border-color:rgba(108,99,255,.4); color:var(--text); }
+  .live-empty { color:var(--muted); font-size:.85rem; margin-top:20px; padding-bottom:4px; }
+
+  /* ── ULTIMOS RESULTADOS ── */
+  .resultados-list .partido-item { padding:12px 20px; }
+  .resultado-score { font-size:.8rem; font-weight:800; color:var(--accent); background:rgba(0,212,170,.08); padding:3px 10px; border-radius:5px; }
+
+  /* ── RANKING TAB ── */
+  .rank-row-pub { display:grid; grid-template-columns:40px 1fr auto; align-items:center; padding:0 20px; border-top:1px solid rgba(255,255,255,.04); transition:background .2s; }
+  .rank-row-pub:hover { background:rgba(255,255,255,.02); }
+  .rank-pos { font-size:.9rem; font-weight:800; }
+  .rank-name-pub { display:flex; align-items:center; gap:10px; padding:12px 0; font-size:.85rem; font-weight:600; }
+  .rank-av { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:800; color:#fff; flex-shrink:0; background:linear-gradient(135deg,var(--primary),#4F46E5); }
+  .rank-pts-pub { font-weight:800; color:var(--accent); font-size:.9rem; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align:center; padding:48px 24px; color:var(--muted); font-size:.875rem; }
+  .empty-ico { font-size:2rem; margin-bottom:10px; }
+
+  /* ── CATS PILLS ── */
+  .cat-pills { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+  .cat-pill { padding:6px 16px; border-radius:20px; font-size:.78rem; font-weight:600; border:1px solid var(--border); color:var(--muted); cursor:pointer; text-decoration:none; transition:all .2s; }
+  .cat-pill.active, .cat-pill:hover { background:var(--primary); border-color:var(--primary); color:#fff; }
+
+  /* ── TORNEO HEADER ── */
+  .torneo-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding:20px 24px; background:var(--card); border:1px solid var(--border); border-radius:14px; }
+  .torneo-logo { width:52px; height:52px; border-radius:10px; background:linear-gradient(135deg,var(--primary),var(--accent)); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; overflow:hidden; }
+  .torneo-logo img { width:100%; height:100%; object-fit:cover; }
+  .torneo-info h2 { font-size:1.1rem; font-weight:800; letter-spacing:-.5px; }
+  .torneo-info p { font-size:.78rem; color:var(--muted); margin-top:3px; }
+  .torneo-status { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:.75rem; font-weight:700; color:var(--accent); }
+
+  @media(max-width:700px){
+    nav { padding:14px 16px; }
+    .page { padding:80px 12px 40px; }
+    .grupos-grid { grid-template-columns:1fr; }
+    .bracket { gap:20px; }
+    .bracket-match { width:160px; }
+    .live-score { font-size:2.5rem; }
+    .live-player-name { font-size:.8rem; }
+  }
+</style>
 </head>
-<body class="min-h-screen">
+<body>
 
-<!-- Header -->
-<div class="bg-gray-900 border-b border-gray-800 px-4 py-3 sticky top-0 z-10">
-    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-sm">🏓</div>
-            <div>
-                <p class="font-black text-sm leading-tight">
-                    {% if torneo %}{{ torneo.nombre }}{% else %}TorneoTT{% endif %}
-                </p>
-                <div class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full pulso"></span>
-                    <span class="text-red-400 text-xs font-bold">EN VIVO</span>
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-            {% for t in torneos %}
-            <a href="?torneo_id={{ t.id }}"
-                class="text-xs px-3 py-1.5 rounded-lg font-semibold transition
-                {% if torneo and torneo.id == t.id %}bg-blue-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700{% endif %}">
-                {{ t.nombre }}
-            </a>
-            {% endfor %}
-        </div>
+<canvas id="bgCanvas"></canvas>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="logo">Rank<em>evo</em></div>
+  <div class="nav-badge"><span class="live-dot"></span>Panel Público en Vivo</div>
+  <div class="nav-right">
+    <a href="{{ url_for('auth.login') }}" class="nav-btn">Admin</a>
+    <a href="{{ url_for('main.ranking') }}" class="nav-btn">Ranking</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- ── SELECTOR TORNEO ── -->
+  <div class="selectors">
+    <div class="sel-group">
+      <span class="sel-label">Torneo</span>
+      <select onchange="cambiarTorneo(this.value)">
+        {% for t in torneos %}
+        <option value="{{ t.id }}" {% if torneo and t.id == torneo.id %}selected{% endif %}>{{ t.nombre }}</option>
+        {% endfor %}
+      </select>
     </div>
-</div>
+  </div>
 
-{% if torneo %}
-<!-- Tabs categorías -->
-<div class="max-w-7xl mx-auto px-4 pt-4 flex flex-wrap gap-2">
+  {% if torneo %}
+  <!-- ── TORNEO HEADER ── -->
+  <div class="torneo-header">
+    <div class="torneo-logo">
+      {% if torneo.logo %}
+      <img src="/uploads/{{ torneo.logo }}" alt="logo">
+      {% else %}🏆{% endif %}
+    </div>
+    <div class="torneo-info">
+      <h2>{{ torneo.nombre }}</h2>
+      <p>{{ torneo.descripcion or 'Torneo de Tenis de Mesa · Rankevo' }}</p>
+    </div>
+    <div class="torneo-status"><span class="live-dot"></span>Activo</div>
+  </div>
+
+  <!-- ── CATEGORÍAS PILLS ── -->
+  {% if cats_con_inscritos %}
+  <div class="cat-pills">
     {% for item in cats_con_inscritos %}
-    <a href="?torneo_id={{ torneo.id }}&categoria={{ item.cat }}"
-        class="px-4 py-1.5 rounded-full text-sm font-semibold transition
-        {% if categoria_actual == item.cat %}bg-blue-600 text-white{% else %}bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white{% endif %}">
-        {{ item.cat }}
-        <span class="ml-1 text-xs opacity-60">{{ item.count }}</span>
+    <a href="{{ url_for('main.panel_publico', torneo_id=torneo.id, categoria=item.cat) }}"
+       class="cat-pill {% if categoria_actual == item.cat %}active{% endif %}">
+      {{ item.cat }} <span style="opacity:.6;font-size:.7rem">({{ item.count }})</span>
     </a>
     {% endfor %}
-</div>
+  </div>
+  {% endif %}
 
-<div class="max-w-7xl mx-auto px-4 py-6">
-
-    <!-- MARCADORES EN VIVO (se renderizan dinámicamente por Socket.IO) -->
-    <div id="panel-live" class="mb-8">
-        <div class="flex items-center gap-2 mb-4">
-            <span class="w-2 h-2 bg-red-500 rounded-full pulso"></span>
-            <h2 class="font-bold text-red-400 uppercase text-sm tracking-wider">Partidos en Curso</h2>
+  <!-- ── MARCADOR EN VIVO ── -->
+  <div class="live-section">
+    <div class="live-card" id="liveCard">
+      <div class="live-empty" id="liveEmpty">
+        <div>📡 Esperando partido en vivo...</div>
+        <div style="margin-top:6px;font-size:.75rem">El marcador aparecerá automáticamente cuando comience un partido</div>
+      </div>
+      <div id="liveMarcador" style="display:none">
+        <div class="live-players">
+          <div class="live-player">
+            <div class="live-player-name" id="liveJ1">—</div>
+            <div class="live-score" id="livePts1">0</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div class="live-vs">VS</div>
+            <div style="font-size:.7rem;color:var(--muted)" id="liveSetInfo">Set 1</div>
+          </div>
+          <div class="live-player">
+            <div class="live-player-name" id="liveJ2">—</div>
+            <div class="live-score" id="livePts2">0</div>
+          </div>
         </div>
-        <div id="tarjetas-live" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div id="sin-live" class="col-span-full text-center py-8 text-gray-600 text-sm">
-                Ningún partido iniciado aún...
-            </div>
-        </div>
+        <div class="live-sets" id="liveSets"></div>
+      </div>
     </div>
+  </div>
 
-    <!-- GRUPOS Y PARTIDOS -->
-    {% for grupo in grupos %}
-    <div class="mb-8">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center font-black text-sm">{{ grupo.numero }}</div>
-            <h3 class="font-bold text-lg">Grupo {{ grupo.numero }}</h3>
-            <!-- Tabla posiciones mini -->
-            <div class="ml-auto hidden sm:flex items-center gap-4 text-xs text-gray-500">
-                {% set sorted_jug = grupo.jugadores | sort(attribute='partidos_ganados', reverse=True) %}
-                {% for gj in sorted_jug %}
-                <span class="{% if loop.index <= 2 %}text-green-400 font-bold{% endif %}">
-                    {{ gj.jugador.nombre.split()[0] }} {{ gj.partidos_ganados }}V/{{ gj.partidos_jugados }}J
+  <!-- ── TABS ── -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('grupos',this)">Grupos</button>
+    <button class="tab" onclick="showTab('bracket',this)">Bracket</button>
+    <button class="tab" onclick="showTab('resultados',this)">Últimos Resultados</button>
+    <button class="tab" onclick="showTab('ranking',this)">Ranking</button>
+  </div>
+
+  <!-- ── TAB GRUPOS ── -->
+  <div class="tab-panel active" id="tab-grupos">
+    {% if grupos %}
+    <div class="grupos-grid">
+      {% for grupo in grupos %}
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Grupo {{ grupo.numero }}</span>
+          <span class="card-badge">{{ grupo.jugadores|length }} jugadores</span>
+        </div>
+        <!-- Tabla de posiciones -->
+        <table class="grupo-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Jugador</th><th>PJ</th><th>PG</th><th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set sorted_jug = grupo.jugadores|sort(attribute='partidos_ganados', reverse=True) %}
+            {% for gj in sorted_jug %}
+            <tr>
+              <td class="{% if loop.index == 1 %}pos-1{% elif loop.index == 2 %}pos-2{% endif %}">
+                {{ loop.index }}
+              </td>
+              <td>
+                <span class="player-name">
+                  <span class="player-av">{{ gj.jugador.nombre[:2].upper() }}</span>
+                  {{ gj.jugador.nombre }}
                 </span>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Partidos del grupo -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {% for partido in grupo_partidos.get(grupo.id, []) %}
-            <div id="partido-{{ partido.id }}"
-                class="partido-card bg-gray-800 rounded-xl overflow-hidden border
-                {% if partido.jugado %}border-gray-600 partido-terminado{% else %}border-gray-700{% endif %}">
-
-                <!-- Estado badge -->
-                <div class="px-3 py-1.5 flex items-center justify-between
-                    {% if partido.jugado %}bg-gray-700{% else %}bg-gray-750{% endif %}">
-                    <span class="text-xs font-bold
-                        {% if partido.jugado %}text-gray-400{% else %}text-yellow-500{% endif %}">
-                        {% if partido.jugado %}✓ Finalizado{% else %}⏳ Pendiente{% endif %}
-                    </span>
-                    {% if partido.resultado %}
-                    <span class="text-xs font-mono text-gray-400">{{ partido.resultado }}</span>
-                    {% endif %}
-                </div>
-
-                <!-- Jugador 1 -->
-                <div class="px-4 py-2.5 border-b border-gray-700
-                    {% if partido.ganador_id == partido.jugador1_id %}bg-green-900 bg-opacity-20{% endif %}">
-                    <div class="flex items-center justify-between">
-                        <p class="font-bold text-sm truncate
-                            {% if partido.ganador_id == partido.jugador1_id %}text-green-400
-                            {% elif partido.jugado %}text-red-400{% endif %}">
-                            {{ partido.jugador1.nombre if partido.jugador1 else '—' }}
-                            {% if partido.ganador_id == partido.jugador1_id %}✓{% endif %}
-                        </p>
-                        <span id="pts1-{{ partido.id }}" class="text-2xl font-black text-gray-600 live-pts">—</span>
-                    </div>
-                    <div id="sets1-{{ partido.id }}" class="text-xs text-gray-500 live-sets"></div>
-                </div>
-
-                <!-- Jugador 2 -->
-                <div class="px-4 py-2.5
-                    {% if partido.ganador_id == partido.jugador2_id %}bg-green-900 bg-opacity-20{% endif %}">
-                    <div class="flex items-center justify-between">
-                        <p class="font-bold text-sm truncate
-                            {% if partido.ganador_id == partido.jugador2_id %}text-green-400
-                            {% elif partido.jugado %}text-red-400{% endif %}">
-                            {{ partido.jugador2.nombre if partido.jugador2 else '—' }}
-                            {% if partido.ganador_id == partido.jugador2_id %}✓{% endif %}
-                        </p>
-                        <span id="pts2-{{ partido.id }}" class="text-2xl font-black text-gray-600 live-pts">—</span>
-                    </div>
-                    <div id="sets2-{{ partido.id }}" class="text-xs text-gray-500 live-sets"></div>
-                </div>
-
-            </div>
+              </td>
+              <td>{{ gj.partidos_jugados }}</td>
+              <td>{{ gj.partidos_ganados }}</td>
+              <td class="pts-badge">{{ gj.partidos_ganados * 2 }}</td>
+            </tr>
             {% endfor %}
+          </tbody>
+        </table>
+        <!-- Partidos del grupo -->
+        <div class="partidos-list">
+          {% for partido in grupo_partidos.get(grupo.id, []) %}
+          <div class="partido-item">
+            <span class="pj-name {% if partido.jugado and partido.ganador_id == partido.jugador1_id %}ganador{% endif %}">
+              {{ partido.jugador1.nombre if partido.jugador1 else '—' }}
+            </span>
+            <span class="pj-vs">vs</span>
+            <span class="pj-name {% if partido.jugado and partido.ganador_id == partido.jugador2_id %}ganador{% endif %}">
+              {{ partido.jugador2.nombre if partido.jugador2 else '—' }}
+            </span>
+            {% if partido.jugado %}
+            <span class="pj-result jugado">{{ partido.resultado or '✓' }}</span>
+            {% else %}
+            <span class="pj-pending">Pendiente</span>
+            {% endif %}
+          </div>
+          {% endfor %}
         </div>
-
-        <!-- Tabla de posiciones del grupo -->
-        <div class="mt-4 bg-gray-800 rounded-xl overflow-hidden">
-            <table class="w-full text-xs">
-                <thead>
-                    <tr class="text-gray-500 border-b border-gray-700 uppercase tracking-wider">
-                        <th class="px-4 py-2 text-left">Jugador</th>
-                        <th class="px-3 py-2 text-center">J</th>
-                        <th class="px-3 py-2 text-center">G</th>
-                        <th class="px-3 py-2 text-center">P</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set sorted_jug = grupo.jugadores | sort(attribute='partidos_ganados', reverse=True) %}
-                    {% for gj in sorted_jug %}
-                    <tr class="border-b border-gray-700 last:border-0
-                        {% if loop.index <= 2 %}bg-green-900 bg-opacity-5{% endif %}">
-                        <td class="px-4 py-2 font-semibold flex items-center gap-2">
-                            {% if loop.index == 1 %}<span class="text-yellow-400">①</span>
-                            {% elif loop.index == 2 %}<span class="text-blue-400">②</span>
-                            {% else %}<span class="text-gray-600">{{ loop.index }}</span>{% endif %}
-                            {{ gj.jugador.nombre }}
-                        </td>
-                        <td class="px-3 py-2 text-center text-gray-400">{{ gj.partidos_jugados }}</td>
-                        <td class="px-3 py-2 text-center text-green-400 font-bold">{{ gj.partidos_ganados }}</td>
-                        <td class="px-3 py-2 text-center text-red-400">{{ gj.partidos_jugados - gj.partidos_ganados }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-
-    {% if not grupos %}
-    <div class="text-center py-20">
-        <p class="text-5xl mb-4">🏓</p>
-        <p class="text-gray-400">No hay grupos generados aún para <strong>{{ categoria_actual }}</strong>.</p>
-    </div>
+    {% else %}
+    <div class="empty"><div class="empty-ico">📋</div>No hay grupos generados aún para esta categoría.</div>
     {% endif %}
+  </div>
+
+  <!-- ── TAB BRACKET ── -->
+  <div class="tab-panel" id="tab-bracket">
+    {% set fases = [('cuartos','Cuartos'),('semi','Semifinales'),('final','Final'),('tercer_lugar','3er Lugar')] %}
+    {% set hay_bracket = namespace(val=false) %}
+    {% for fase_key, fase_label in fases %}
+      {% set partidos_fase = [] %}
+      {# chequeamos si hay partidos en esta fase #}
+    {% endfor %}
+    <div class="card">
+      <div class="card-header"><span class="card-title">Bracket Eliminatorio</span></div>
+      <div class="bracket-wrap">
+        <div class="bracket">
+          {% for fase_key, fase_label in fases %}
+          {% set partidos_fase = namespace(items=[]) %}
+          {% if torneo %}
+          <div class="bracket-col">
+            <div class="bracket-col-title">{{ fase_label }}</div>
+            {% set found = namespace(val=false) %}
+            {% for grupo in grupos %}{% endfor %}
+            {# Traemos partidos de esta fase desde el contexto — necesitamos pasarlos desde la ruta #}
+            <div class="bracket-match">
+              <div class="bracket-player vacio">Por definir</div>
+              <div class="bracket-player vacio">Por definir</div>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB RESULTADOS ── -->
+  <div class="tab-panel" id="tab-resultados">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Últimos Resultados</span>
+        <span class="card-badge">{{ ultimos_resultados|length }} partidos</span>
+      </div>
+      <div class="resultados-list">
+        {% if ultimos_resultados %}
+        {% for partido in ultimos_resultados %}
+        <div class="partido-item">
+          <span class="pj-name {% if partido.ganador_id == partido.jugador1_id %}ganador{% endif %}">
+            {{ partido.jugador1.nombre if partido.jugador1 else '—' }}
+          </span>
+          <span class="pj-vs">vs</span>
+          <span class="pj-name {% if partido.ganador_id == partido.jugador2_id %}ganador{% endif %}">
+            {{ partido.jugador2.nombre if partido.jugador2 else '—' }}
+          </span>
+          <span class="resultado-score">{{ partido.resultado or '✓' }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty"><div class="empty-ico">🎯</div>No hay resultados registrados aún.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB RANKING ── -->
+  <div class="tab-panel" id="tab-ranking">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Ranking · {{ categoria_actual }}</span>
+      </div>
+      {% if grupos %}
+      {% set ranking_grupo = [] %}
+      {% for grupo in grupos %}
+        {% for gj in grupo.jugadores %}
+          {# ranking simplificado por victorias en grupos #}
+        {% endfor %}
+      {% endfor %}
+      {% endif %}
+      <div style="padding:8px 0">
+        {% set jugadores_ranking = [] %}
+        {% for grupo in grupos %}
+          {% for gj in grupo.jugadores|sort(attribute='partidos_ganados',reverse=True) %}
+          <div class="rank-row-pub">
+            <span class="rank-pos" style="color:{% if loop.index == 1 %}var(--gold){% elif loop.index == 2 %}var(--silver){% elif loop.index == 3 %}var(--bronze){% else %}var(--muted){% endif %}">
+              G{{ grupo.numero }}
+            </span>
+            <span class="rank-name-pub">
+              <span class="rank-av">{{ gj.jugador.nombre[:2].upper() }}</span>
+              {{ gj.jugador.nombre }}
+            </span>
+            <span class="rank-pts-pub">{{ gj.partidos_ganados }} V</span>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="empty"><div class="empty-ico">🏅</div>Sin datos de ranking aún.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="empty" style="margin-top:60px">
+    <div class="empty-ico">🏓</div>
+    <div>No hay torneos activos en este momento.</div>
+  </div>
+  {% endif %}
 
 </div>
-{% else %}
-<div class="text-center py-20">
-    <p class="text-5xl mb-4">🏆</p>
-    <p class="text-gray-400 text-lg">No hay torneos activos.</p>
-</div>
-{% endif %}
 
 <script>
-const socket = io();
-// Mapa de partidos live activos: id -> datos
-const partidos_live = {};
-
-socket.on('marcador_live', function(data) {
-    const id = data.partido_id;
-    partidos_live[id] = data;
-
-    // Actualizar tarjeta estática si existe
-    const el1 = document.getElementById('pts1-' + id);
-    const el2 = document.getElementById('pts2-' + id);
-    const sets1 = document.getElementById('sets1-' + id);
-    const sets2 = document.getElementById('sets2-' + id);
-    const card = document.getElementById('partido-' + id);
-
-    if (el1) {
-        el1.textContent = data.pts1;
-        el1.classList.remove('text-gray-600');
-        el1.classList.add('text-white');
-    }
-    if (el2) {
-        el2.textContent = data.pts2;
-        el2.classList.remove('text-gray-600');
-        el2.classList.add('text-white');
-    }
-    if (sets1) sets1.textContent = 'Sets: ' + data.sets1;
-    if (sets2) sets2.textContent = 'Sets: ' + data.sets2;
-    if (card) {
-        card.classList.add('partido-live');
-        card.classList.remove('border-gray-700');
-    }
-
-    // Renderizar tarjeta en panel live
-    renderLive(id, data);
-});
-
-socket.on('resultado_actualizado', function(data) {
-    // Quitar del panel live y recargar página
-    delete partidos_live[data.partido_id];
-    const liveCard = document.getElementById('live-card-' + data.partido_id);
-    if (liveCard) liveCard.remove();
-    const card = document.getElementById('partido-' + data.partido_id);
-    if (card) {
-        card.classList.remove('partido-live');
-        card.classList.add('partido-terminado');
-    }
-    // Recargar para mostrar resultado oficial
-    setTimeout(() => location.reload(), 800);
-});
-
-function renderLive(id, data) {
-    const container = document.getElementById('tarjetas-live');
-    const sinLive = document.getElementById('sin-live');
-    if (sinLive) sinLive.remove();
-
-    let card = document.getElementById('live-card-' + id);
-    const sets_str = (data.historial || []).map(s => s.p1 + '-' + s.p2).join('  ');
-
-    const html = `
-    <div id="live-card-${id}" class="bg-gray-800 rounded-xl border-2 border-red-500 overflow-hidden shadow-lg"
-        style="box-shadow: 0 0 25px rgba(239,68,68,0.25)">
-        <div class="bg-red-900 bg-opacity-30 px-3 py-1.5 flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 bg-red-500 rounded-full pulso"></span>
-                <span class="text-red-400 text-xs font-bold">EN VIVO</span>
-            </div>
-            <span class="text-gray-400 text-xs">Set ${data.set_actual || 1}</span>
-        </div>
-        <div class="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
-            <p class="font-bold text-sm truncate flex-1 ${data.pts1 > data.pts2 ? 'text-white' : 'text-gray-400'}">${data.j1 || '—'}</p>
-            <span class="text-4xl font-black ml-3 ${data.pts1 > data.pts2 ? 'text-blue-400' : 'text-gray-500'}">${data.pts1}</span>
-        </div>
-        <div class="px-4 py-3 flex items-center justify-between">
-            <p class="font-bold text-sm truncate flex-1 ${data.pts2 > data.pts1 ? 'text-white' : 'text-gray-400'}">${data.j2 || '—'}</p>
-            <span class="text-4xl font-black ml-3 ${data.pts2 > data.pts1 ? 'text-red-400' : 'text-gray-500'}">${data.pts2}</span>
-        </div>
-        <div class="px-4 py-2 bg-gray-900 flex items-center justify-between">
-            <span class="text-xs text-gray-500">Sets: ${data.sets1} - ${data.sets2}</span>
-            ${sets_str ? `<span class="text-xs font-mono text-gray-600">${sets_str}</span>` : ''}
-        </div>
-    </div>`;
-
-    if (card) {
-        card.outerHTML = html;
-    } else {
-        container.insertAdjacentHTML('beforeend', html);
-    }
+// ── PARTICLES ──
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+const N=60, MAX_D=110;
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+class P {
+  constructor(){ this.x=Math.random()*W; this.y=Math.random()*H; this.vx=(Math.random()-.5)*.25; this.vy=(Math.random()-.5)*.25; this.r=Math.random()*1.2+.4; this.a=Math.random()*.3+.1; }
+  update(){ this.x+=this.vx; this.y+=this.vy; if(this.x<0)this.x=W; if(this.x>W)this.x=0; if(this.y<0)this.y=H; if(this.y>H)this.y=0; }
+  draw(){ ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fillStyle=`rgba(140,130,255,${this.a})`; ctx.fill(); }
 }
+for(let i=0;i<N;i++) particles.push(new P());
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<MAX_D){ ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.strokeStyle=`rgba(108,99,255,${(1-d/MAX_D)*.12})`; ctx.lineWidth=.6; ctx.stroke(); }
+    }
+  }
+  particles.forEach(p=>{ p.update(); p.draw(); });
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ── TABS ──
+function showTab(id, btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── SELECTOR TORNEO ──
+function cambiarTorneo(id){
+  const cat = new URLSearchParams(window.location.search).get('categoria') || '';
+  window.location.href = `{{ url_for('main.panel_publico') }}?torneo_id=${id}&categoria=${cat}`;
+}
+
+// ── SOCKET.IO EN VIVO ──
+const socket = io();
+socket.on('marcador_live', data => {
+  document.getElementById('liveEmpty').style.display = 'none';
+  document.getElementById('liveMarcador').style.display = 'block';
+  document.getElementById('liveJ1').textContent = data.j1 || '—';
+  document.getElementById('liveJ2').textContent = data.j2 || '—';
+  document.getElementById('livePts1').textContent = data.pts1 ?? 0;
+  document.getElementById('livePts2').textContent = data.pts2 ?? 0;
+  document.getElementById('liveSetInfo').textContent = `Set ${data.set_actual || 1}`;
+  const setsEl = document.getElementById('liveSets');
+  setsEl.innerHTML = '';
+  if(data.historial && data.historial.length){
+    data.historial.forEach((s,i) => {
+      const chip = document.createElement('div');
+      chip.className = 'set-chip';
+      chip.textContent = `${s[0]}-${s[1]}`;
+      setsEl.appendChild(chip);
+    });
+  }
+  const activo = document.createElement('div');
+  activo.className = 'set-chip activo';
+  activo.textContent = `${data.pts1}-${data.pts2}`;
+  setsEl.appendChild(activo);
+});
+
+socket.on('resultado_actualizado', data => {
+  // Recargar página cuando se registra resultado
+  const torneo_id = new URLSearchParams(window.location.search).get('torneo_id');
+  if(data.torneo_id == torneo_id){
+    setTimeout(()=>location.reload(), 1500);
+  }
+});
 </script>
 </body>
 </html>

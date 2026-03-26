@@ -1,160 +1,345 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TorneoTT — Sistema de Torneos de Tenis de Mesa</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
-        .gradient-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .card-hover { transition: transform .2s, box-shadow .2s; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-    </style>
-</head>
-<body class="min-h-screen">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rankevo – Tournament Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #6C63FF;
+    --accent: #00D4AA;
+    --dark: #07070F;
+    --dark2: #0D0D1A;
+    --card: rgba(19,19,31,0.7);
+    --text: #E8E8F2;
+    --muted: #6B6B90;
+    --border: rgba(108,99,255,0.15);
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background: var(--dark); color: var(--text); overflow-x: hidden; }
 
-<!-- NAVBAR -->
-<nav class="border-b border-gray-800 bg-gray-900 bg-opacity-80 backdrop-blur sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-black">🏓</div>
-            <div>
-                <p class="font-black text-white text-sm leading-tight">TorneoTT</p>
-                <p class="text-gray-500 text-xs">Sistema de Torneos</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ url_for('main.ranking') }}"
-                class="text-sm text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-gray-800">
-                🏅 Ranking
-            </a>
-            <a href="{{ url_for('main.panel_publico') }}"
-                class="text-sm text-gray-400 hover:text-white transition px-3 py-2 rounded-lg hover:bg-gray-800">
-                📺 Panel Público
-            </a>
-            <a href="{{ url_for('auth.login') }}"
-                class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
-                Administrar →
-            </a>
-        </div>
-    </div>
+  #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+
+  nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:20px 64px; display:flex; align-items:center; justify-content:space-between; transition:background .4s; }
+  nav.scrolled { background:rgba(7,7,15,0.95); backdrop-filter:blur(24px); border-bottom:1px solid var(--border); }
+  .logo { font-size:1.55rem; font-weight:900; letter-spacing:-1.5px; background:linear-gradient(120deg,#fff 30%,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .logo em { font-style:normal; -webkit-text-fill-color:var(--primary); }
+  .nav-links { display:flex; gap:40px; list-style:none; }
+  .nav-links a { color:var(--muted); text-decoration:none; font-size:.875rem; font-weight:500; transition:color .2s; }
+  .nav-links a:hover { color:var(--text); }
+  .nav-right { display:flex; gap:14px; align-items:center; }
+  .btn-ghost { background:none; border:1px solid rgba(255,255,255,.12); padding:9px 22px; border-radius:8px; color:var(--text); font-size:.85rem; font-weight:500; cursor:pointer; transition:border-color .2s; text-decoration:none; display:inline-block; }
+  .btn-ghost:hover { border-color:var(--primary); }
+  .btn-solid { background:var(--primary); border:none; padding:10px 24px; border-radius:8px; color:#fff; font-size:.85rem; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; }
+  .btn-solid:hover { opacity:.85; }
+
+  .hero { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:140px 24px 80px; }
+  .hero-bg { position:absolute; inset:0; background:radial-gradient(ellipse 90% 70% at 50% -10%,rgba(108,99,255,.18) 0%,transparent 65%),radial-gradient(ellipse 50% 50% at 85% 90%,rgba(0,212,170,.1) 0%,transparent 55%); }
+
+  .badge { position:relative; z-index:1; display:inline-flex; align-items:center; gap:10px; border:1px solid rgba(108,99,255,.35); background:rgba(108,99,255,.08); padding:7px 20px; border-radius:6px; font-size:.78rem; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#a09fff; margin-bottom:32px; opacity:0; animation:fadeUp .7s .1s forwards; }
+  .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .hero h1 { position:relative; z-index:1; font-size:clamp(3.2rem,8vw,7rem); font-weight:900; line-height:1.0; letter-spacing:-4px; opacity:0; animation:fadeUp .8s .3s forwards; }
+  .hero h1 .line2 { display:block; background:linear-gradient(100deg,var(--primary),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero p { position:relative; z-index:1; max-width:520px; font-size:1.05rem; color:var(--muted); line-height:1.75; margin:28px auto 0; opacity:0; animation:fadeUp .8s .5s forwards; }
+  .hero-actions { position:relative; z-index:1; display:flex; gap:14px; margin-top:48px; opacity:0; animation:fadeUp .8s .7s forwards; }
+  .btn-hero { background:linear-gradient(135deg,var(--primary),#4F46E5); border:none; padding:15px 40px; border-radius:8px; color:#fff; font-weight:700; font-size:.95rem; cursor:pointer; transition:box-shadow .3s,transform .2s; text-decoration:none; display:inline-block; }
+  .btn-hero:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(108,99,255,.45); }
+  .btn-outline { background:none; border:1px solid rgba(255,255,255,.14); padding:15px 40px; border-radius:8px; color:var(--text); font-weight:600; font-size:.95rem; cursor:pointer; transition:border-color .2s; text-decoration:none; display:inline-block; }
+  .btn-outline:hover { border-color:rgba(255,255,255,.4); }
+
+  .hero-metrics { position:relative; z-index:1; display:flex; gap:60px; margin-top:80px; border-top:1px solid rgba(255,255,255,.06); padding-top:48px; opacity:0; animation:fadeUp .8s .9s forwards; }
+  .metric-val { font-size:2.4rem; font-weight:900; letter-spacing:-2px; }
+  .metric-val span { background:linear-gradient(120deg,#fff,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .metric-lbl { font-size:.78rem; color:var(--muted); font-weight:500; margin-top:4px; letter-spacing:.5px; text-transform:uppercase; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+
+  .reveal { opacity:0; transform:translateY(36px); transition:opacity .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1); }
+  .reveal.show { opacity:1; transform:none; }
+
+  .wrap { max-width:1160px; margin:0 auto; padding:0 24px; }
+  .section { padding:110px 0; position:relative; z-index:1; }
+  .eyebrow { font-size:.72rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--accent); margin-bottom:14px; display:block; }
+  .section-h { font-size:clamp(2rem,4vw,3rem); font-weight:800; letter-spacing:-1.5px; line-height:1.15; }
+  .section-h .g { background:linear-gradient(120deg,var(--primary),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .section-sub { color:var(--muted); font-size:.95rem; line-height:1.7; margin-top:14px; max-width:480px; }
+
+  .features-layout { display:grid; grid-template-columns:1fr 1fr; gap:2px; margin-top:64px; border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .feat { padding:40px 44px; background:var(--card); border-right:1px solid var(--border); border-bottom:1px solid var(--border); transition:background .3s; backdrop-filter:blur(12px); }
+  .feat:hover { background:rgba(108,99,255,.07); }
+  .feat:nth-child(2n) { border-right:none; }
+  .feat:nth-last-child(-n+2) { border-bottom:none; }
+  .feat-num { font-size:.72rem; font-weight:700; letter-spacing:2px; color:var(--primary); margin-bottom:18px; }
+  .feat h3 { font-size:1.1rem; font-weight:700; margin-bottom:10px; }
+  .feat p { font-size:.875rem; color:var(--muted); line-height:1.65; }
+
+  .ranking-section { background:var(--dark2); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:110px 0; position:relative; z-index:1; }
+  .ranking-layout { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
+  .rank-table { border:1px solid var(--border); border-radius:16px; overflow:hidden; background:var(--card); backdrop-filter:blur(16px); }
+  .rank-thead { display:grid; grid-template-columns:44px 1fr auto; padding:14px 24px; background:rgba(108,99,255,.08); font-size:.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .rank-row { display:grid; grid-template-columns:44px 1fr auto; padding:0 24px; align-items:center; border-top:1px solid rgba(255,255,255,.04); transition:background .2s; }
+  .rank-row:hover { background:rgba(255,255,255,.02); }
+  .rpos { font-size:.95rem; font-weight:800; }
+  .rpos.g{color:#F5C542} .rpos.s{color:#B0B8C9} .rpos.b{color:#C97D4A}
+  .rname { display:flex; align-items:center; gap:12px; font-weight:600; font-size:.9rem; padding:14px 0; }
+  .av { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:800; color:#fff; flex-shrink:0; }
+  .rpts { font-weight:800; color:var(--accent); font-size:.95rem; }
+  .bar-row { grid-column:1/-1; padding:0 24px 12px; }
+  .bar-bg { height:2px; background:rgba(255,255,255,.06); border-radius:2px; }
+  .bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--primary),var(--accent)); width:0%; transition:width 1.2s cubic-bezier(.22,1,.36,1); }
+
+  .cats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:56px; }
+  .cat { border:1px solid var(--border); border-radius:12px; padding:28px 20px; text-align:center; background:var(--card); backdrop-filter:blur(12px); transition:border-color .3s,transform .3s; cursor:pointer; }
+  .cat:hover { border-color:rgba(108,99,255,.5); transform:translateY(-5px); }
+  .cat-ico{font-size:1.6rem;margin-bottom:10px} .cat-n{font-weight:700;font-size:.9rem} .cat-s{font-size:.75rem;color:var(--muted);margin-top:4px}
+
+  .cta-wrap { position:relative; z-index:1; max-width:1160px; margin:0 auto 110px; padding:0 24px; }
+  .cta-inner { border:1px solid var(--border); border-radius:20px; padding:80px 60px; background:var(--card); backdrop-filter:blur(20px); text-align:center; overflow:hidden; position:relative; }
+  .cta-glow { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(108,99,255,.12) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; }
+  .cta-inner h2 { font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; letter-spacing:-1.5px; position:relative; z-index:1; }
+  .cta-inner p { color:var(--muted); font-size:.95rem; margin:16px auto 40px; max-width:440px; line-height:1.7; position:relative; z-index:1; }
+
+  footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:36px 64px; display:flex; justify-content:space-between; align-items:center; }
+  .f-logo { font-size:1.1rem; font-weight:900; letter-spacing:-1px; background:linear-gradient(120deg,#fff,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  footer p { font-size:.78rem; color:var(--muted); }
+
+  @media(max-width:860px){
+    nav{padding:18px 20px;} .nav-links{display:none;}
+    .features-layout,.ranking-layout{grid-template-columns:1fr;}
+    .cats-grid{grid-template-columns:repeat(2,1fr);}
+    .hero-metrics{gap:32px;}
+    .feat:nth-child(2n){border-right:1px solid var(--border);}
+    .feat:nth-last-child(-n+2){border-bottom:1px solid var(--border);}
+    .feat:last-child{border-bottom:none;}
+    footer{flex-direction:column;gap:10px;text-align:center;padding:28px 20px;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- ── NAVBAR ── -->
+<nav id="nav">
+  <div class="logo">Rank<em>evo</em></div>
+  <ul class="nav-links">
+    <li><a href="#features">Funciones</a></li>
+    <li><a href="#ranking">Ranking</a></li>
+    <li><a href="#categorias">Categorías</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="{{ url_for('auth.login') }}" class="btn-ghost">Iniciar sesión</a>
+    <a href="{{ url_for('auth.registro') }}" class="btn-solid">Comenzar</a>
+  </div>
 </nav>
 
-<!-- HERO -->
-<section class="max-w-6xl mx-auto px-6 py-20 text-center">
-    <div class="inline-flex items-center gap-2 bg-blue-900 bg-opacity-30 border border-blue-800 text-blue-300 text-xs font-bold px-4 py-2 rounded-full mb-6">
-        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-        Sistema activo
-    </div>
-    <h1 class="text-5xl md:text-6xl font-black mb-6">
-        <span class="gradient-text">Torneos de Tenis</span><br>
-        <span class="text-white">de Mesa Profesional</span>
-    </h1>
-    <p class="text-gray-400 text-lg max-w-2xl mx-auto mb-10">
-        Gestión completa de torneos, fixture automático, bracket eliminatorio y ranking en tiempo real.
-    </p>
-    <div class="flex flex-wrap justify-center gap-4">
-        <a href="{{ url_for('main.ranking') }}"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition text-lg">
-            🏅 Ver Ranking
-        </a>
-        <a href="{{ url_for('main.panel_publico') }}"
-            class="bg-gray-800 hover:bg-gray-700 text-white font-bold px-8 py-3 rounded-xl transition text-lg flex items-center gap-2">
-            📺 Panel en Vivo
-            <span class="text-xs bg-red-600 px-2 py-0.5 rounded font-bold animate-pulse">LIVE</span>
-        </a>
-    </div>
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="badge"><span class="badge-dot"></span>Plataforma de Torneos · Tenis de Mesa</div>
+  <h1>Gestiona torneos<br><span class="line2">con precisión total.</span></h1>
+  <p>Rankevo automatiza fixtures, brackets y rankings en tiempo real. Diseñado para clubes y federaciones profesionales.</p>
+  <div class="hero-actions">
+    <a href="{{ url_for('auth.registro') }}" class="btn-hero">Comenzar gratis</a>
+    <a href="{{ url_for('main.ranking') }}" class="btn-outline">Ver ranking →</a>
+  </div>
+  <div class="hero-metrics">
+    <div><div class="metric-val"><span id="c1">0</span>+</div><div class="metric-lbl">Torneos activos</div></div>
+    <div><div class="metric-val"><span id="c2">0</span>+</div><div class="metric-lbl">Jugadores</div></div>
+    <div><div class="metric-val"><span id="c3">0</span>+</div><div class="metric-lbl">Partidos jugados</div></div>
+  </div>
 </section>
 
-<!-- FEATURES -->
-<section class="max-w-6xl mx-auto px-6 py-12">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="card-hover bg-gray-800 rounded-2xl p-6 border border-gray-700">
-            <div class="text-4xl mb-4">🏆</div>
-            <h3 class="font-bold text-lg mb-2">Torneos Completos</h3>
-            <p class="text-gray-400 text-sm">Crea torneos con fase de grupos y bracket eliminatorio con configuración personalizada de puntos.</p>
-        </div>
-        <div class="card-hover bg-gray-800 rounded-2xl p-6 border border-gray-700">
-            <div class="text-4xl mb-4">⚡</div>
-            <h3 class="font-bold text-lg mb-2">Resultados en Vivo</h3>
-            <p class="text-gray-400 text-sm">Marcador en tiempo real con WebSockets. El público ve los resultados al instante sin recargar.</p>
-        </div>
-        <div class="card-hover bg-gray-800 rounded-2xl p-6 border border-gray-700">
-            <div class="text-4xl mb-4">🏅</div>
-            <h3 class="font-bold text-lg mb-2">Ranking Automático</h3>
-            <p class="text-gray-400 text-sm">Puntos calculados automáticamente según posición final. Ranking histórico por categoría.</p>
-        </div>
+<!-- ── FEATURES ── -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <span class="eyebrow">Plataforma completa</span>
+      <h2 class="section-h">Todo lo que necesitas,<br><span class="g">nada que no necesitas.</span></h2>
     </div>
+    <div class="features-layout reveal" style="transition-delay:.1s">
+      <div class="feat"><div class="feat-num">01</div><h3>Gestión de Torneos</h3><p>Configura sets, puntos, etapas y logos. Activa o pausa torneos desde el panel de administración.</p></div>
+      <div class="feat"><div class="feat-num">02</div><h3>Fixtures Automáticos</h3><p>Genera grupos equilibrados respetando seeds y distribución round-robin sin repetición consecutiva.</p></div>
+      <div class="feat"><div class="feat-num">03</div><h3>Bracket Eliminatorio</h3><p>Cuartos, semis, final y tercer lugar con avance automático de ganadores y puntos por posición.</p></div>
+      <div class="feat"><div class="feat-num">04</div><h3>Marcador en Vivo</h3><p>Transmisión WebSocket set a set. El panel público se actualiza en tiempo real sin recargar.</p></div>
+      <div class="feat"><div class="feat-num">05</div><h3>Rankings Globales</h3><p>Sistema de puntuación acumulativo por categoría. Historial completo por torneo y jugador.</p></div>
+      <div class="feat"><div class="feat-num">06</div><h3>Roles y Accesos</h3><p>Admin, árbitro y jugador con flujo de aprobación, vinculación de cuentas y perfiles personales.</p></div>
+    </div>
+  </div>
 </section>
 
-<!-- TORNEOS ACTIVOS -->
-{% if torneos %}
-<section class="max-w-6xl mx-auto px-6 py-12">
-    <h2 class="text-2xl font-black mb-6">🔥 Torneos Activos</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for torneo in torneos %}
-        <div class="card-hover bg-gray-800 rounded-xl p-5 border border-gray-700">
-            <div class="flex items-center gap-3 mb-3">
-                {% if torneo.logo %}
-                <img src="{{ url_for('static', filename='uploads/' + torneo.logo) }}" class="w-10 h-10 rounded-lg object-contain bg-gray-700 p-1">
-                {% else %}
-                <div class="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-xl">🏆</div>
-                {% endif %}
-                <div>
-                    <p class="font-bold text-sm">{{ torneo.nombre }}</p>
-                    <p class="text-gray-500 text-xs">{{ torneo.fecha.strftime('%d/%m/%Y') }}</p>
-                </div>
+<!-- ── RANKING ── -->
+<div class="ranking-section" id="ranking">
+  <div class="wrap">
+    <div class="ranking-layout">
+      <div class="reveal">
+        <span class="eyebrow">Ranking global</span>
+        <h2 class="section-h">Cada punto<br><span class="g">importa.</span></h2>
+        <p class="section-sub">El ranking acumula resultados de todos los torneos. Campeones, finalistas y semifinalistas suman automáticamente.</p>
+        <a href="{{ url_for('main.ranking') }}" class="btn-hero" style="margin-top:36px;display:inline-block">Ver ranking completo</a>
+      </div>
+      <div class="reveal" style="transition-delay:.2s">
+        <div class="rank-table">
+          <div class="rank-thead"><span>#</span><span>Jugador</span><span>Pts</span></div>
+          {% set max_pts = ranking_top[0][1] if ranking_top else 1 %}
+          {% for jugador, total_pts in ranking_top %}
+          <div class="rank-row">
+            <span class="rpos {% if loop.index == 1 %}g{% elif loop.index == 2 %}s{% elif loop.index == 3 %}b{% endif %}">{{ loop.index }}</span>
+            <span class="rname">
+              <div class="av" style="background:linear-gradient(135deg,#6C63FF,#9B5FFF)">{{ jugador.nombre[:2].upper() }}</div>
+              {{ jugador.nombre }}
+            </span>
+            <span class="rpts">{{ total_pts }}</span>
+          </div>
+          <div class="bar-row">
+            <div class="bar-bg">
+              <div class="bar-fill" data-w="{{ ((total_pts / max_pts) * 100)|int }}"></div>
             </div>
-            <a href="{{ url_for('main.panel_publico', torneo_id=torneo.id) }}"
-                class="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg transition">
-                Ver en vivo →
-            </a>
+          </div>
+          {% else %}
+          <div style="padding:24px;text-align:center;color:var(--muted);font-size:.85rem">Aún no hay resultados registrados.</div>
+          {% endfor %}
         </div>
-        {% endfor %}
+      </div>
     </div>
-</section>
-{% endif %}
+  </div>
+</div>
 
-<!-- RANKING TOP -->
-{% if ranking_top %}
-<section class="max-w-6xl mx-auto px-6 py-12">
-    <h2 class="text-2xl font-black mb-6">🥇 Top Ranking</h2>
-    <div class="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
-        {% for jugador, total in ranking_top %}
-        <div class="flex items-center justify-between px-6 py-4 {% if not loop.last %}border-b border-gray-700{% endif %} hover:bg-gray-750 transition">
-            <div class="flex items-center gap-4">
-                <span class="text-2xl font-black
-                    {% if loop.index == 1 %}text-yellow-400
-                    {% elif loop.index == 2 %}text-gray-300
-                    {% elif loop.index == 3 %}text-amber-600
-                    {% else %}text-gray-600{% endif %}">
-                    #{{ loop.index }}
-                </span>
-                <div>
-                    <p class="font-bold">{{ jugador.nombre }}</p>
-                    <p class="text-gray-500 text-xs">{{ jugador.categoria }}</p>
-                </div>
-            </div>
-            <span class="text-blue-400 font-black text-lg">{{ total }} pts</span>
-        </div>
-        {% endfor %}
-        <div class="px-6 py-3 bg-gray-900 text-center">
-            <a href="{{ url_for('main.ranking') }}" class="text-blue-400 text-sm hover:text-blue-300 font-bold transition">
-                Ver ranking completo →
-            </a>
-        </div>
+<!-- ── CATEGORÍAS ── -->
+<section class="section" id="categorias">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center;max-width:560px;margin:0 auto">
+      <span class="eyebrow">Categorías</span>
+      <h2 class="section-h">Para todos los <span class="g">niveles.</span></h2>
     </div>
+    <div class="cats-grid">
+      <div class="cat reveal"><div class="cat-ico">👑</div><div class="cat-n">TC</div><div class="cat-s">Todas las categorías</div></div>
+      <div class="cat reveal" style="transition-delay:.05s"><div class="cat-ico">⭐</div><div class="cat-n">Master</div><div class="cat-s">Élite</div></div>
+      <div class="cat reveal" style="transition-delay:.1s"><div class="cat-ico">🔥</div><div class="cat-n">Sub 20 / 19</div><div class="cat-s">Promesas</div></div>
+      <div class="cat reveal" style="transition-delay:.15s"><div class="cat-ico">🌟</div><div class="cat-n">Juvenil</div><div class="cat-s">Sub 15 / 13</div></div>
+      <div class="cat reveal" style="transition-delay:.2s"><div class="cat-ico">🎯</div><div class="cat-n">Infantil</div><div class="cat-s">Categoría base</div></div>
+      <div class="cat reveal" style="transition-delay:.25s"><div class="cat-ico">🚀</div><div class="cat-n">Peneca</div><div class="cat-s">Iniciación</div></div>
+      <div class="cat reveal" style="transition-delay:.3s"><div class="cat-ico">🏅</div><div class="cat-n">Dobles</div><div class="cat-s">Próximamente</div></div>
+      <div class="cat reveal" style="transition-delay:.35s"><div class="cat-ico">🏆</div><div class="cat-n">Invitacional</div><div class="cat-s">Especial</div></div>
+    </div>
+  </div>
 </section>
-{% endif %}
 
-<!-- FOOTER -->
-<footer class="border-t border-gray-800 mt-12 py-8 text-center text-gray-600 text-sm">
-    <p>🏓 TorneoTT — Sistema de Torneos de Tenis de Mesa</p>
+<!-- ── CTA ── -->
+<div class="cta-wrap reveal">
+  <div class="cta-inner">
+    <div class="cta-glow"></div>
+    <h2>¿Listo para organizar tu <span style="background:linear-gradient(120deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent">próximo torneo</span>?</h2>
+    <p>Únete a los clubes que ya confían en Rankevo para sus competencias de tenis de mesa.</p>
+    <a href="{{ url_for('auth.registro') }}" class="btn-hero" style="font-size:1rem;padding:16px 48px;position:relative;z-index:1;display:inline-block">Crear cuenta gratis</a>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="f-logo">Rankevo</div>
+  <p>© 2026 Rankevo · Tenis de Mesa · Chile 🇨🇱</p>
+  <p>Hecho con precisión</p>
 </footer>
 
+<script>
+// ── PARTICLE MESH CANVAS ──
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+const mouse = {x:-9999, y:-9999};
+const N=90, MAX_D=130, M_D=160;
+
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+window.addEventListener('mouseleave', ()=>{ mouse.x=-9999; mouse.y=-9999; });
+
+class P {
+  constructor(){
+    this.x=Math.random()*W; this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.35; this.vy=(Math.random()-.5)*.35;
+    this.r=Math.random()*1.5+.5; this.a=Math.random()*.45+.15;
+  }
+  update(){
+    const dx=this.x-mouse.x, dy=this.y-mouse.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<M_D){ const f=(M_D-d)/M_D*.018; this.vx+=dx*f; this.vy+=dy*f; }
+    this.vx*=.98; this.vy*=.98;
+    this.x+=this.vx; this.y+=this.vy;
+    if(this.x<-20)this.x=W+20; if(this.x>W+20)this.x=-20;
+    if(this.y<-20)this.y=H+20; if(this.y>H+20)this.y=-20;
+  }
+  draw(){
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(140,130,255,${this.a})`; ctx.fill();
+  }
+}
+
+for(let i=0;i<N;i++) particles.push(new P());
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const dx=particles[i].x-particles[j].x;
+      const dy=particles[i].y-particles[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<MAX_D){
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x,particles[i].y);
+        ctx.lineTo(particles[j].x,particles[j].y);
+        ctx.strokeStyle=`rgba(108,99,255,${(1-d/MAX_D)*.18})`;
+        ctx.lineWidth=.8; ctx.stroke();
+      }
+    }
+  }
+  particles.forEach(p=>{ p.update(); p.draw(); });
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ── COUNTERS ──
+function counter(el,target,ms){
+  let v=0, step=target/(ms/16);
+  const t=setInterval(()=>{
+    v=Math.min(v+step,target);
+    el.textContent=Math.floor(v).toLocaleString('es-CL');
+    if(v>=target)clearInterval(t);
+  },16);
+}
+window.addEventListener('load',()=>setTimeout(()=>{
+  counter(document.getElementById('c1'), {{ total_torneos }}, 1600);
+  counter(document.getElementById('c2'), {{ total_jugadores }}, 1800);
+  counter(document.getElementById('c3'), {{ total_partidos }}, 2200);
+},900));
+
+// ── SCROLL REVEAL ──
+const ro=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.classList.add('show');
+    e.target.querySelectorAll('.bar-fill').forEach(b=>setTimeout(()=>b.style.width=b.dataset.w+'%',400));
+  });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+document.querySelectorAll('.bar-fill').forEach(b=>{
+  const ob=new IntersectionObserver(e=>{
+    if(e[0].isIntersecting){ setTimeout(()=>b.style.width=b.dataset.w+'%',400); ob.disconnect(); }
+  },{threshold:.2});
+  ob.observe(b);
+});
+
+// ── NAVBAR ──
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY>40);
+});
+</script>
 </body>
 </html>
