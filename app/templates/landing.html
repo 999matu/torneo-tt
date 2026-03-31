@@ -57,8 +57,8 @@
 
   /* TICKER */
   .sports-ticker { position:relative; z-index:1; overflow:hidden; padding:18px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:rgba(13,13,26,0.6); backdrop-filter:blur(12px); }
-  .ticker-track { display:flex; gap:48px; animation:ticker 32s linear infinite; white-space:nowrap; }
-  .ticker-item { display:flex; align-items:center; gap:10px; font-size:.8rem; font-weight:600; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; flex-shrink:0; }
+  .ticker-track { display:inline-flex; gap:48px; animation:ticker 42s linear infinite; white-space:nowrap; will-change:transform; }
+  .ticker-item { display:inline-flex; align-items:center; gap:10px; font-size:.8rem; font-weight:600; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; flex-shrink:0; }
   .ticker-item span { font-size:1.1rem; }
   @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
@@ -88,7 +88,7 @@
   .ranking-layout { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
 
   /* PODIO DEMO */
-  .podio-wrap { display:flex; align-items:flex-end; justify-content:center; gap:10px; padding:0 0 0; }
+  .podio-wrap { display:flex; align-items:flex-end; justify-content:center; gap:10px; }
   .podio-slot { display:flex; flex-direction:column; align-items:center; flex:1; max-width:130px; }
   .podio-crown { font-size:1.3rem; margin-bottom:6px; animation:float 3s ease-in-out infinite; }
   @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
@@ -106,12 +106,8 @@
   .rank-demo { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--card); backdrop-filter:blur(16px); margin-top:16px; }
   .rank-demo-row { display:flex; align-items:center; gap:14px; padding:13px 20px; border-bottom:1px solid rgba(255,255,255,.04); }
   .rank-demo-row:last-child { border-bottom:none; }
-  .rd-pos { font-size:.82rem; font-weight:800; color:var(--muted); width:18px; text-align:center; flex-shrink:0; }
   .rd-av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:800; color:#fff; flex-shrink:0; }
   .rd-name { flex:1; font-size:.82rem; font-weight:600; }
-  .rd-pts { font-size:.82rem; font-weight:800; color:var(--accent); }
-  .rd-bar { width:60px; height:2px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
-  .rd-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--primary),var(--accent)); }
 
   /* DEPORTES */
   .cats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:56px; }
@@ -243,6 +239,8 @@
     <div class="ticker-item"><span>🏊</span> Natación</div>
     <div class="ticker-item"><span>🤼</span> Lucha</div>
     <div class="ticker-item"><span>🎯</span> Tiro</div>
+    <div class="ticker-item"><span>🎾</span> Pádel</div>
+    <!-- DUPLICADO para loop continuo sin salto -->
     <div class="ticker-item"><span>🏓</span> Tenis de Mesa</div>
     <div class="ticker-item"><span>⚽</span> Fútbol</div>
     <div class="ticker-item"><span>🏀</span> Básquetbol</div>
@@ -255,6 +253,7 @@
     <div class="ticker-item"><span>🏊</span> Natación</div>
     <div class="ticker-item"><span>🤼</span> Lucha</div>
     <div class="ticker-item"><span>🎯</span> Tiro</div>
+    <div class="ticker-item"><span>🎾</span> Pádel</div>
   </div>
 </div>
 
@@ -280,28 +279,20 @@
 <div class="ranking-section" id="como-funciona">
   <div class="wrap">
     <div class="ranking-layout">
-
-      <!-- TEXTO -->
       <div class="reveal">
         <span class="eyebrow">Cómo funciona</span>
         <h2 class="section-h">De la inscripción<br><span class="g">al podio.</span></h2>
         <p class="section-sub">En minutos configuras tu torneo, inscribes participantes, generas el fixture y comienzas a registrar resultados. El ranking se actualiza solo.</p>
         <a href="{{ url_for('auth.registro') }}" class="btn-hero" style="margin-top:36px;display:inline-block">Probar ahora gratis</a>
       </div>
-
-      <!-- DEMO VISUAL -->
       <div class="reveal" style="transition-delay:.2s">
-
-        <!-- PODIO DEMO genérico -->
         <div class="podio-wrap">
-          <!-- 2do -->
           <div class="podio-slot">
             <div class="podio-av" style="background:linear-gradient(135deg,#B0B8C9,#7a8497)">2°</div>
             <div class="podio-label">Finalista</div>
             <div class="podio-pts">350 <small>pts</small></div>
             <div class="podio-block pb2"><span style="font-size:.9rem">🥈</span></div>
           </div>
-          <!-- 1ro -->
           <div class="podio-slot">
             <div class="podio-crown">👑</div>
             <div class="podio-av podio-av-1" style="background:linear-gradient(135deg,#F5C542,#e0a500)">1°</div>
@@ -309,7 +300,6 @@
             <div class="podio-pts">500 <small>pts</small></div>
             <div class="podio-block pb1"><span style="font-size:.9rem">🥇</span></div>
           </div>
-          <!-- 3ro -->
           <div class="podio-slot">
             <div class="podio-av" style="background:linear-gradient(135deg,#C97D4A,#8b5530)">3°</div>
             <div class="podio-label">Semifinal</div>
@@ -317,8 +307,6 @@
             <div class="podio-block pb3"><span style="font-size:.9rem">🥉</span></div>
           </div>
         </div>
-
-        <!-- PASOS -->
         <div class="rank-demo">
           <div class="rank-demo-row">
             <div class="rd-av" style="background:linear-gradient(135deg,var(--primary),#4F46E5)">1</div>
@@ -341,7 +329,6 @@
             <span style="font-size:.75rem;color:var(--accent);font-weight:700">AUTO</span>
           </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -384,7 +371,7 @@
         <p class="plan-desc">Para organizadores que están comenzando sus primeras competencias.</p>
         <hr class="plan-divider">
         <ul class="plan-features">
-          <li>Hasta 2 torneos activos</li>
+          <li>1 torneo activo a la vez</li>
           <li>Hasta 30 participantes</li>
           <li>Fixture automático</li>
           <li>Bracket eliminatorio</li>
@@ -452,10 +439,7 @@
         <p class="testi-text">"Antes llevábamos los brackets en papel. Con Rankevo todo es automático y los resultados se actualizan al instante. Nuestros participantes lo adoran."</p>
         <div class="testi-author">
           <div class="testi-av" style="background:linear-gradient(135deg,#6C63FF,#9B5FFF)">CR</div>
-          <div>
-            <div class="testi-name">Carlos R.</div>
-            <div class="testi-role">Director técnico · Club Deportivo</div>
-          </div>
+          <div><div class="testi-name">Carlos R.</div><div class="testi-role">Director técnico · Club Deportivo</div></div>
         </div>
       </div>
       <div class="testi reveal" style="transition-delay:.1s">
@@ -463,10 +447,7 @@
         <p class="testi-text">"Organizamos un torneo de 80 participantes en 4 categorías. Rankevo generó todos los fixtures en segundos y el panel público funcionó perfecto todo el día."</p>
         <div class="testi-author">
           <div class="testi-av" style="background:linear-gradient(135deg,#00D4AA,#0099FF)">MF</div>
-          <div>
-            <div class="testi-name">María F.</div>
-            <div class="testi-role">Presidenta · Federación Regional</div>
-          </div>
+          <div><div class="testi-name">María F.</div><div class="testi-role">Presidenta · Federación Regional</div></div>
         </div>
       </div>
       <div class="testi reveal" style="transition-delay:.2s">
@@ -474,10 +455,7 @@
         <p class="testi-text">"El marcador en vivo fue un diferencial enorme. Los espectadores seguían los partidos desde sus teléfonos sin necesidad de estar en el recinto."</p>
         <div class="testi-author">
           <div class="testi-av" style="background:linear-gradient(135deg,#F5C542,#FF6B35)">JL</div>
-          <div>
-            <div class="testi-name">Jorge L.</div>
-            <div class="testi-role">Organizador · Liga Universitaria</div>
-          </div>
+          <div><div class="testi-name">Jorge L.</div><div class="testi-role">Organizador · Liga Universitaria</div></div>
         </div>
       </div>
     </div>
@@ -590,15 +568,15 @@ function loop(){
 loop();
 
 // COUNTERS
-function counter(el,target,ms){
+function counter(el, target, ms){
   let v=0, step=target/(ms/16);
   const t=setInterval(()=>{
-    v=Math.min(v+step,target);
+    v=Math.min(v+step, target);
     el.textContent=Math.floor(v).toLocaleString('es-CL');
-    if(v>=target)clearInterval(t);
+    if(v>=target) clearInterval(t);
   },16);
 }
-window.addEventListener('load',()=>setTimeout(()=>{
+window.addEventListener('load', ()=>setTimeout(()=>{
   counter(document.getElementById('c1'), {{ total_torneos }}, 1600);
   counter(document.getElementById('c2'), {{ total_jugadores }}, 1800);
   counter(document.getElementById('c3'), {{ total_partidos }}, 2200);
@@ -607,7 +585,7 @@ window.addEventListener('load',()=>setTimeout(()=>{
 // SCROLL REVEAL
 const ro=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
-    if(!e.isIntersecting)return;
+    if(!e.isIntersecting) return;
     e.target.classList.add('show');
   });
 },{threshold:.12});
