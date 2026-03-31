@@ -6,6 +6,7 @@ from app import db
 from app.models import Usuario, Jugador, CATEGORIAS
 import openpyxl
 import os
+import re
 
 
 # ─── BLUEPRINTS ─────────────────────────────────────────
@@ -13,9 +14,16 @@ auth = Blueprint('auth', __name__)
 main = Blueprint('main', __name__)
 
 
+# ─── HELPERS DE ROL ─────────────────────────────────────
+def es_admin(usuario):
+    return usuario.rol in ('admin', 'superadmin')
+
+def es_superadmin(usuario):
+    return usuario.rol == 'superadmin'
+
+
 # ─── ALLOWED FILES ──────────────────────────────────────
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
-
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -29,7 +37,6 @@ MAPA_CATEGORIAS = {
     'SUB 19': 'Sub19', 'SUB 20': 'Sub20',
 }
 
-
 def parsear_categorias(texto):
     cats = []
     texto = texto.upper().replace(' E ', ' Y ')
@@ -40,6 +47,22 @@ def parsear_categorias(texto):
     return cats
 
 
+# ─── VALIDACIÓN CONTRASEÑA SEGURA ───────────────────────
+def validar_password(pw):
+    errores = []
+    if len(pw) < 8:
+        errores.append('La contraseña debe tener al menos 8 caracteres.')
+    if not re.search(r'[A-Z]', pw):
+        errores.append('Debe contener al menos una letra mayúscula (A-Z).')
+    if not re.search(r'[a-z]', pw):
+        errores.append('Debe contener al menos una letra minúscula (a-z).')
+    if not re.search(r'[0-9]', pw):
+        errores.append('Debe contener al menos un número (0-9).')
+    if not re.search(r'[^A-Za-z0-9]', pw):
+        errores.append('Debe contener al menos un carácter especial (!@#$%...).')
+    return errores
+
+
 # ─── AUTH ROUTES ────────────────────────────────────────
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,7 +71,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        usuario = Usuario.query.filter_by(username=username).first()
+        usuario  = Usuario.query.filter_by(username=username).first()
         if usuario and check_password_hash(usuario.password, password):
             if not usuario.activo:
                 flash('Tu cuenta está desactivada.', 'danger')
@@ -70,12 +93,26 @@ def logout():
 @auth.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
-        username = request.form.get('username').strip()
-        password = request.form.get('password')
-        nombre_jugador = request.form.get('nombre_jugador').strip()
+        username       = request.form.get('username', '').strip()
+        password       = request.form.get('password', '')
+        password2      = request.form.get('password2', '')
+        nombre_jugador = request.form.get('nombre_jugador', '').strip()
+
+        # ── Validación contraseña segura ──
+        errores_pw = validar_password(password)
+        if errores_pw:
+            for e in errores_pw:
+                flash(e, 'danger')
+            return redirect(url_for('auth.registro'))
+
+        if password != password2:
+            flash('Las contraseñas no coinciden.', 'danger')
+            return redirect(url_for('auth.registro'))
+
         if Usuario.query.filter_by(username=username).first():
             flash('Ese nombre de usuario ya existe.', 'danger')
             return redirect(url_for('auth.registro'))
+
         from app.models import SolicitudRegistro
         solicitud = SolicitudRegistro(
             username=username,
@@ -173,7 +210,7 @@ def jugadores():
 @login_required
 def nuevo_jugador():
     if request.method == 'POST':
-        nombre = request.form.get('nombre').strip()
+        nombre    = request.form.get('nombre').strip()
         categoria = request.form.get('categoria')
         if not nombre or not categoria:
             flash('Todos los campos son obligatorios.', 'danger')
@@ -191,7 +228,7 @@ def nuevo_jugador():
 def editar_jugador(id):
     jugador = Jugador.query.get_or_404(id)
     if request.method == 'POST':
-        jugador.nombre = request.form.get('nombre').strip()
+        jugador.nombre    = request.form.get('nombre').strip()
         jugador.categoria = request.form.get('categoria')
         db.session.commit()
         flash('Jugador actualizado.', 'success')
@@ -227,10 +264,10 @@ def importar_jugadores():
         wb = openpyxl.load_workbook(filepath)
         ws = wb.active
         importados = 0
-        errores = 0
+        errores    = 0
         for row in ws.iter_rows(min_row=6, values_only=True):
             try:
-                nombre = str(row[1]).strip() if row[1] else None
+                nombre  = str(row[1]).strip() if row[1] else None
                 cat_raw = str(row[2]).strip() if row[2] else None
                 if not nombre or not cat_raw or nombre == 'NOMBRE':
                     continue
@@ -295,17 +332,17 @@ def nuevo_torneo():
 def editar_torneo(id):
     torneo = Torneo.query.get_or_404(id)
     if request.method == 'POST':
-        torneo.nombre = request.form.get('nombre').strip()
-        torneo.descripcion = request.form.get('descripcion', '').strip()
-        torneo.sets_por_partido = int(request.form.get('sets_por_partido', 5))
-        torneo.puntos_por_set = int(request.form.get('puntos_por_set', 11))
-        torneo.pasan_segundo = request.form.get('pasan_segundo') == 'on'
-        torneo.pts_campeon = int(request.form.get('pts_campeon', 100))
-        torneo.pts_finalista = int(request.form.get('pts_finalista', 70))
-        torneo.pts_semifinalista = int(request.form.get('pts_semifinalista', 50))
-        torneo.pts_cuartos = int(request.form.get('pts_cuartos', 30))
+        torneo.nombre              = request.form.get('nombre').strip()
+        torneo.descripcion         = request.form.get('descripcion', '').strip()
+        torneo.sets_por_partido    = int(request.form.get('sets_por_partido', 5))
+        torneo.puntos_por_set      = int(request.form.get('puntos_por_set', 11))
+        torneo.pasan_segundo       = request.form.get('pasan_segundo') == 'on'
+        torneo.pts_campeon         = int(request.form.get('pts_campeon', 100))
+        torneo.pts_finalista       = int(request.form.get('pts_finalista', 70))
+        torneo.pts_semifinalista   = int(request.form.get('pts_semifinalista', 50))
+        torneo.pts_cuartos         = int(request.form.get('pts_cuartos', 30))
         torneo.pts_grupos_victoria = int(request.form.get('pts_grupos_victoria', 15))
-        torneo.pts_participacion = int(request.form.get('pts_participacion', 5))
+        torneo.pts_participacion   = int(request.form.get('pts_participacion', 5))
         if 'logo' in request.files:
             logo = request.files['logo']
             if logo and logo.filename != '':
@@ -335,7 +372,7 @@ from app.models import Inscripcion
 @main.route('/torneos/<int:torneo_id>/inscripciones')
 @login_required
 def inscripciones(torneo_id):
-    torneo = Torneo.query.get_or_404(torneo_id)
+    torneo    = Torneo.query.get_or_404(torneo_id)
     categoria = request.args.get('categoria', CATEGORIAS[0])
     inscritos = db.session.query(Inscripcion, Jugador)\
         .join(Jugador, Inscripcion.jugador_id == Jugador.id)\
@@ -345,9 +382,7 @@ def inscripciones(torneo_id):
     disponibles = Jugador.query.filter_by(activo=True, categoria=categoria)\
         .filter(~Jugador.id.in_(ids_inscritos) if ids_inscritos else db.true())\
         .order_by(Jugador.nombre).all()
-    resumen = {}
-    for cat in CATEGORIAS:
-        resumen[cat] = Inscripcion.query.filter_by(torneo_id=torneo_id, categoria=cat).count()
+    resumen = {cat: Inscripcion.query.filter_by(torneo_id=torneo_id, categoria=cat).count() for cat in CATEGORIAS}
     return render_template('inscripciones/lista.html',
         torneo=torneo, inscritos=inscritos, disponibles=disponibles,
         categorias=CATEGORIAS, categoria_actual=categoria, resumen=resumen)
@@ -357,9 +392,8 @@ def inscripciones(torneo_id):
 @login_required
 def agregar_inscripcion(torneo_id):
     jugador_id = request.form.get('jugador_id')
-    categoria = request.form.get('categoria')
-    existe = Inscripcion.query.filter_by(torneo_id=torneo_id, jugador_id=jugador_id, categoria=categoria).first()
-    if not existe:
+    categoria  = request.form.get('categoria')
+    if not Inscripcion.query.filter_by(torneo_id=torneo_id, jugador_id=jugador_id, categoria=categoria).first():
         db.session.add(Inscripcion(torneo_id=torneo_id, jugador_id=jugador_id, categoria=categoria, es_seed=False))
         db.session.commit()
     return redirect(url_for('main.inscripciones', torneo_id=torneo_id, categoria=categoria))
@@ -368,7 +402,7 @@ def agregar_inscripcion(torneo_id):
 @main.route('/torneos/<int:torneo_id>/inscripciones/eliminar/<int:inscripcion_id>')
 @login_required
 def eliminar_inscripcion(torneo_id, inscripcion_id):
-    categoria = request.args.get('categoria', CATEGORIAS[0])
+    categoria   = request.args.get('categoria', CATEGORIAS[0])
     inscripcion = Inscripcion.query.get_or_404(inscripcion_id)
     db.session.delete(inscripcion)
     db.session.commit()
@@ -379,7 +413,7 @@ def eliminar_inscripcion(torneo_id, inscripcion_id):
 @main.route('/torneos/<int:torneo_id>/inscripciones/seed/<int:inscripcion_id>', methods=['POST'])
 @login_required
 def toggle_seed(torneo_id, inscripcion_id):
-    categoria = request.form.get('categoria', CATEGORIAS[0])
+    categoria   = request.form.get('categoria', CATEGORIAS[0])
     inscripcion = Inscripcion.query.get_or_404(inscripcion_id)
     inscripcion.es_seed = not inscripcion.es_seed
     db.session.commit()
@@ -389,7 +423,7 @@ def toggle_seed(torneo_id, inscripcion_id):
 @main.route('/torneos/<int:torneo_id>/inscripciones/solo-grupo/<int:inscripcion_id>', methods=['POST'])
 @login_required
 def toggle_solo_grupo(torneo_id, inscripcion_id):
-    categoria = request.form.get('categoria', CATEGORIAS[0])
+    categoria   = request.form.get('categoria', CATEGORIAS[0])
     inscripcion = Inscripcion.query.get_or_404(inscripcion_id)
     inscripcion.solo_en_grupo = not inscripcion.solo_en_grupo
     db.session.commit()
@@ -400,11 +434,9 @@ def toggle_solo_grupo(torneo_id, inscripcion_id):
 @login_required
 def agregar_todos_categoria(torneo_id):
     categoria = request.form.get('categoria')
-    jugadores = Jugador.query.filter_by(activo=True, categoria=categoria).all()
     agregados = 0
-    for j in jugadores:
-        existe = Inscripcion.query.filter_by(torneo_id=torneo_id, jugador_id=j.id, categoria=categoria).first()
-        if not existe:
+    for j in Jugador.query.filter_by(activo=True, categoria=categoria).all():
+        if not Inscripcion.query.filter_by(torneo_id=torneo_id, jugador_id=j.id, categoria=categoria).first():
             db.session.add(Inscripcion(torneo_id=torneo_id, jugador_id=j.id, categoria=categoria))
             agregados += 1
     db.session.commit()
@@ -422,12 +454,12 @@ def mi_perfil():
     if not current_user.jugador_id:
         flash('Tu cuenta aún no está vinculada a un jugador.', 'warning')
         return redirect(url_for('main.dashboard'))
-    jugador = Jugador.query.get(current_user.jugador_id)
+    jugador       = Jugador.query.get(current_user.jugador_id)
     inscripciones = Inscripcion.query.filter_by(jugador_id=jugador.id).all()
-    partidos = Partido.query.filter(
+    partidos      = Partido.query.filter(
         (Partido.jugador1_id == jugador.id) | (Partido.jugador2_id == jugador.id)
     ).order_by(Partido.id.desc()).all()
-    puntos = PuntosRanking.query.filter_by(jugador_id=jugador.id).all()
+    puntos       = PuntosRanking.query.filter_by(jugador_id=jugador.id).all()
     total_puntos = sum(p.puntos for p in puntos)
     return render_template('perfil/mi_perfil.html',
         jugador=jugador, inscripciones=inscripciones,
@@ -438,15 +470,13 @@ def mi_perfil():
 @main.route('/admin/usuarios')
 @login_required
 def admin_usuarios():
-    if current_user.rol != 'admin':
+    if not es_admin(current_user):
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('main.dashboard'))
-    usuarios = Usuario.query.order_by(Usuario.creado.desc()).all()
+    usuarios    = Usuario.query.order_by(Usuario.creado.desc()).all()
     solicitudes = SolicitudRegistro.query.filter_by(procesado=False).all()
     jugadores_sin_cuenta = Jugador.query.filter(
-        ~Jugador.id.in_(
-            db.session.query(Usuario.jugador_id).filter(Usuario.jugador_id != None)
-        )
+        ~Jugador.id.in_(db.session.query(Usuario.jugador_id).filter(Usuario.jugador_id != None))
     ).order_by(Jugador.nombre).all()
     return render_template('admin/usuarios.html',
         usuarios=usuarios, solicitudes=solicitudes,
@@ -456,13 +486,12 @@ def admin_usuarios():
 @main.route('/admin/usuarios/aprobar/<int:solicitud_id>', methods=['POST'])
 @login_required
 def aprobar_usuario(solicitud_id):
-    if current_user.rol != 'admin':
+    if not es_admin(current_user):
         return redirect(url_for('main.dashboard'))
-    solicitud = SolicitudRegistro.query.get_or_404(solicitud_id)
+    solicitud  = SolicitudRegistro.query.get_or_404(solicitud_id)
     jugador_id = request.form.get('jugador_id')
     db.session.add(Usuario(
-        username=solicitud.username,
-        password=solicitud.password_hash,
+        username=solicitud.username, password=solicitud.password_hash,
         rol='jugador', activo=True, aprobado=True,
         jugador_id=int(jugador_id) if jugador_id else None
     ))
@@ -475,12 +504,15 @@ def aprobar_usuario(solicitud_id):
 @main.route('/admin/usuarios/crear', methods=['POST'])
 @login_required
 def crear_usuario():
-    if current_user.rol != 'admin':
+    if not es_admin(current_user):
         return redirect(url_for('main.dashboard'))
-    username = request.form.get('username').strip()
-    password = request.form.get('password')
-    rol = request.form.get('rol', 'jugador')
+    username   = request.form.get('username').strip()
+    password   = request.form.get('password')
+    rol        = request.form.get('rol', 'jugador')
     jugador_id = request.form.get('jugador_id')
+    if rol in ('admin', 'superadmin') and not es_superadmin(current_user):
+        flash('Solo el superadmin puede crear administradores.', 'danger')
+        return redirect(url_for('main.admin_usuarios'))
     if Usuario.query.filter_by(username=username).first():
         flash('Ese usuario ya existe.', 'danger')
         return redirect(url_for('main.admin_usuarios'))
@@ -497,13 +529,63 @@ def crear_usuario():
 @main.route('/admin/usuarios/desactivar/<int:usuario_id>')
 @login_required
 def desactivar_usuario(usuario_id):
-    if current_user.rol != 'admin':
+    if not es_admin(current_user):
         return redirect(url_for('main.dashboard'))
     u = Usuario.query.get_or_404(usuario_id)
+    if u.rol == 'superadmin':
+        flash('No se puede desactivar al superadmin.', 'danger')
+        return redirect(url_for('main.admin_usuarios'))
     u.activo = not u.activo
     db.session.commit()
     flash(f'Usuario {u.username} {"activado" if u.activo else "desactivado"}.', 'success')
     return redirect(url_for('main.admin_usuarios'))
+
+
+@main.route('/admin/usuarios/eliminar/<int:usuario_id>', methods=['POST'])
+@login_required
+def eliminar_usuario(usuario_id):
+    if not es_admin(current_user):
+        return redirect(url_for('main.dashboard'))
+    u = Usuario.query.get_or_404(usuario_id)
+    if u.rol == 'superadmin':
+        flash('No se puede eliminar al superadmin.', 'danger')
+        return redirect(url_for('main.admin_usuarios'))
+    sol = SolicitudRegistro.query.filter_by(username=u.username).first()
+    if sol:
+        db.session.delete(sol)
+    db.session.delete(u)
+    db.session.commit()
+    flash(f'Usuario {u.username} eliminado permanentemente.', 'success')
+    return redirect(url_for('main.admin_usuarios'))
+
+
+# ─── SUPERADMIN ─────────────────────────────────────────
+@main.route('/superadmin/crear-usuario', methods=['GET', 'POST'])
+@login_required
+def superadmin_crear_usuario():
+    if not es_superadmin(current_user):
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    jugadores = Jugador.query.filter_by(activo=True).order_by(Jugador.nombre).all()
+    if request.method == 'POST':
+        username   = request.form.get('username').strip()
+        password   = request.form.get('password').strip()
+        rol        = request.form.get('rol', 'jugador')
+        jugador_id = request.form.get('jugador_id')
+        if Usuario.query.filter_by(username=username).first():
+            flash('Ese nombre de usuario ya existe.', 'danger')
+            return redirect(url_for('main.superadmin_crear_usuario'))
+        db.session.add(Usuario(
+            username=username, password=generate_password_hash(password),
+            rol=rol, activo=True, aprobado=True, email_verificado=True,
+            jugador_id=int(jugador_id) if jugador_id else None
+        ))
+        db.session.commit()
+        flash(f'Usuario "{username}" creado con rol "{rol}".', 'success')
+        return redirect(url_for('main.superadmin_crear_usuario'))
+    usuarios = Usuario.query.order_by(Usuario.creado.desc()).all()
+    return render_template('superadmin/crear_usuario.html',
+        jugadores=jugadores, usuarios=usuarios, roles=['jugador', 'admin', 'superadmin'])
 
 
 # ─── FIXTURE ────────────────────────────────────────────
@@ -513,8 +595,8 @@ import random
 
 
 def ordenar_partidos_sin_consecutivos(partidos):
-    pendientes = list(partidos)
-    ordenados = []
+    pendientes  = list(partidos)
+    ordenados   = []
     ultimos_ids = set()
     while pendientes:
         encontrado = False
@@ -524,7 +606,7 @@ def ordenar_partidos_sin_consecutivos(partidos):
                 ordenados.append(p)
                 pendientes.remove(p)
                 ultimos_ids = jugadores
-                encontrado = True
+                encontrado  = True
                 break
         if not encontrado:
             p = pendientes.pop(0)
@@ -536,7 +618,7 @@ def ordenar_partidos_sin_consecutivos(partidos):
 @main.route('/torneos/<int:torneo_id>/fixture')
 @login_required
 def fixture(torneo_id):
-    torneo = Torneo.query.get_or_404(torneo_id)
+    torneo    = Torneo.query.get_or_404(torneo_id)
     categoria = request.args.get('categoria', None)
     cats_con_inscritos = []
     for cat in CATEGORIAS:
@@ -547,24 +629,24 @@ def fixture(torneo_id):
         categoria = cats_con_inscritos[0]['cat']
     elif not categoria:
         categoria = CATEGORIAS[0]
-    grupos = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
+    grupos             = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
     partidos_generados = Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='grupos').count() > 0
-    grupo_partidos = {}
+    grupo_partidos     = {}
     for grupo in grupos:
         partidos_raw = Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='grupos', grupo_id=grupo.id).all()
         grupo_partidos[grupo.id] = ordenar_partidos_sin_consecutivos(partidos_raw)
     return render_template('fixture/index.html',
         torneo=torneo, categoria_actual=categoria,
-        cats_con_inscritos=cats_con_inscritos,
-        grupos=grupos, partidos_generados=partidos_generados,
-        grupo_partidos=grupo_partidos, categorias=CATEGORIAS)
+        cats_con_inscritos=cats_con_inscritos, grupos=grupos,
+        partidos_generados=partidos_generados, grupo_partidos=grupo_partidos,
+        categorias=CATEGORIAS)
 
 
 @main.route('/torneos/<int:torneo_id>/fixture/generar', methods=['POST'])
 @login_required
 def generar_fixture(torneo_id):
-    torneo = Torneo.query.get_or_404(torneo_id)
-    categoria = request.form.get('categoria')
+    torneo     = Torneo.query.get_or_404(torneo_id)
+    categoria  = request.form.get('categoria')
     num_grupos = int(request.form.get('num_grupos', 2))
     for p in Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='grupos').all():
         db.session.delete(p)
@@ -576,17 +658,17 @@ def generar_fixture(torneo_id):
     inscritos = db.session.query(Inscripcion, Jugador)\
         .join(Jugador, Inscripcion.jugador_id == Jugador.id)\
         .filter(Inscripcion.torneo_id == torneo_id, Inscripcion.categoria == categoria).all()
-    solos = [(i, j) for i, j in inscritos if getattr(i, 'solo_en_grupo', False)]
-    seeds = [(i, j) for i, j in inscritos if i.es_seed and not getattr(i, 'solo_en_grupo', False)]
+    solos    = [(i, j) for i, j in inscritos if getattr(i, 'solo_en_grupo', False)]
+    seeds    = [(i, j) for i, j in inscritos if i.es_seed and not getattr(i, 'solo_en_grupo', False)]
     no_seeds = [(i, j) for i, j in inscritos if not i.es_seed and not getattr(i, 'solo_en_grupo', False)]
     random.shuffle(no_seeds)
     total_grupos = num_grupos + len(solos)
     for n in range(1, total_grupos + 1):
         db.session.add(Grupo(torneo_id=torneo_id, categoria=categoria, numero=n))
     db.session.commit()
-    grupos = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
+    grupos          = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
     grupos_normales = grupos[:num_grupos]
-    grupos_solos = grupos[num_grupos:]
+    grupos_solos    = grupos[num_grupos:]
     for idx, (insc, jug) in enumerate(solos):
         db.session.add(GrupoJugador(grupo_id=grupos_solos[idx].id, jugador_id=jug.id))
     for idx, (insc, jug) in enumerate(seeds):
@@ -603,22 +685,22 @@ def generar_fixture(torneo_id):
                     grupo_id=grupo.id, jugador1_id=jugadores_grupo[i],
                     jugador2_id=jugadores_grupo[j], jugado=False))
     db.session.commit()
-    flash(f'Fixture generado: {num_grupos} grupos + {len(solos)} grupo(s) individual(es) para {categoria}.', 'success')
+    flash(f'Fixture generado: {num_grupos} grupos + {len(solos)} individual(es) para {categoria}.', 'success')
     return redirect(url_for('main.fixture', torneo_id=torneo_id, categoria=categoria))
 
 
 @main.route('/torneos/<int:torneo_id>/fixture/resultado/<int:partido_id>', methods=['POST'])
 @login_required
 def registrar_resultado(torneo_id, partido_id):
-    partido = Partido.query.get_or_404(partido_id)
-    categoria = request.form.get('categoria')
+    partido    = Partido.query.get_or_404(partido_id)
+    categoria  = request.form.get('categoria')
     ganador_id = int(request.form.get('ganador_id'))
-    resultado = request.form.get('resultado', '')
+    resultado  = request.form.get('resultado', '')
     partido.ganador_id = ganador_id
-    partido.resultado = resultado
-    partido.jugado = True
+    partido.resultado  = resultado
+    partido.jugado     = True
     perdedor_id = partido.jugador2_id if ganador_id == partido.jugador1_id else partido.jugador1_id
-    gj_ganador = GrupoJugador.query.filter_by(grupo_id=partido.grupo_id, jugador_id=ganador_id).first()
+    gj_ganador  = GrupoJugador.query.filter_by(grupo_id=partido.grupo_id, jugador_id=ganador_id).first()
     gj_perdedor = GrupoJugador.query.filter_by(grupo_id=partido.grupo_id, jugador_id=perdedor_id).first()
     if gj_ganador:
         gj_ganador.partidos_jugados += 1
@@ -652,11 +734,11 @@ def marcador_live(torneo_id, partido_id):
     return {'ok': True}
 
 
-# ─── BRACKET ELIMINATORIO ───────────────────────────────
+# ─── BRACKET ────────────────────────────────────────────
 @main.route('/torneos/<int:torneo_id>/bracket')
 @login_required
 def bracket(torneo_id):
-    torneo = Torneo.query.get_or_404(torneo_id)
+    torneo    = Torneo.query.get_or_404(torneo_id)
     categoria = request.args.get('categoria', None)
     cats_con_inscritos = []
     for cat in CATEGORIAS:
@@ -667,14 +749,13 @@ def bracket(torneo_id):
         categoria = cats_con_inscritos[0]['cat']
     elif not categoria:
         categoria = CATEGORIAS[0]
-    fases = ['cuartos', 'semi', 'final', 'tercer_lugar']
+    fases            = ['cuartos', 'semi', 'final', 'tercer_lugar']
     partidos_bracket = {}
     for fase in fases:
         partidos_bracket[fase] = Partido.query.filter_by(
-            torneo_id=torneo_id, categoria=categoria, fase=fase
-        ).order_by(Partido.ronda).all()
+            torneo_id=torneo_id, categoria=categoria, fase=fase).order_by(Partido.ronda).all()
     bracket_generado = len(partidos_bracket['semi']) > 0 or len(partidos_bracket['final']) > 0
-    grupos = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
+    grupos       = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
     clasificados = []
     for grupo in grupos:
         sorted_jug = sorted(grupo.jugadores, key=lambda x: (-x.partidos_ganados, x.partidos_jugados))
@@ -684,31 +765,26 @@ def bracket(torneo_id):
             clasificados.append({'pos': '2°', 'grupo': grupo.numero, 'jugador': sorted_jug[1].jugador})
     return render_template('bracket/index.html',
         torneo=torneo, categoria_actual=categoria,
-        cats_con_inscritos=cats_con_inscritos,
-        partidos_bracket=partidos_bracket,
-        bracket_generado=bracket_generado,
-        clasificados=clasificados,
-        categorias=CATEGORIAS)
+        cats_con_inscritos=cats_con_inscritos, partidos_bracket=partidos_bracket,
+        bracket_generado=bracket_generado, clasificados=clasificados, categorias=CATEGORIAS)
 
 
 @main.route('/torneos/<int:torneo_id>/bracket/generar', methods=['POST'])
 @login_required
 def generar_bracket(torneo_id):
-    torneo = Torneo.query.get_or_404(torneo_id)
+    torneo    = Torneo.query.get_or_404(torneo_id)
     categoria = request.form.get('categoria')
     for fase in ['cuartos', 'semi', 'final', 'tercer_lugar']:
         for p in Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase=fase).all():
             db.session.delete(p)
     db.session.commit()
-    grupos = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
+    grupos   = Grupo.query.filter_by(torneo_id=torneo_id, categoria=categoria).order_by(Grupo.numero).all()
     primeros = []
     segundos = []
     for grupo in grupos:
         sorted_jug = sorted(grupo.jugadores, key=lambda x: (-x.partidos_ganados, x.partidos_jugados))
-        if sorted_jug:
-            primeros.append(sorted_jug[0].jugador_id)
-        if len(sorted_jug) > 1:
-            segundos.append(sorted_jug[1].jugador_id)
+        if sorted_jug:           primeros.append(sorted_jug[0].jugador_id)
+        if len(sorted_jug) > 1: segundos.append(sorted_jug[1].jugador_id)
     num_grupos = len(grupos)
     if num_grupos >= 4:
         cruces = [
@@ -737,7 +813,7 @@ def generar_bracket(torneo_id):
                     torneo_id=torneo_id, categoria=categoria, fase='semi', ronda=ronda,
                     jugador1_id=j1, jugador2_id=j2,
                     jugado=j2 is None, ganador_id=j1 if j2 is None else None))
-    db.session.add(Partido(torneo_id=torneo_id, categoria=categoria, fase='final', ronda=1, jugado=False))
+    db.session.add(Partido(torneo_id=torneo_id, categoria=categoria, fase='final',        ronda=1, jugado=False))
     db.session.add(Partido(torneo_id=torneo_id, categoria=categoria, fase='tercer_lugar', ronda=1, jugado=False))
     db.session.commit()
     inscritos = Inscripcion.query.filter_by(torneo_id=torneo_id, categoria=categoria).all()
@@ -751,45 +827,39 @@ def generar_bracket(torneo_id):
 @main.route('/torneos/<int:torneo_id>/bracket/resultado/<int:partido_id>', methods=['POST'])
 @login_required
 def resultado_bracket(torneo_id, partido_id):
-    partido = Partido.query.get_or_404(partido_id)
-    categoria = request.form.get('categoria')
+    partido    = Partido.query.get_or_404(partido_id)
+    categoria  = request.form.get('categoria')
     ganador_id = int(request.form.get('ganador_id'))
-    resultado = request.form.get('resultado', '')
+    resultado  = request.form.get('resultado', '')
     perdedor_id = partido.jugador2_id if ganador_id == partido.jugador1_id else partido.jugador1_id
     partido.ganador_id = ganador_id
-    partido.resultado = resultado
-    partido.jugado = True
+    partido.resultado  = resultado
+    partido.jugado     = True
     db.session.commit()
     torneo = Torneo.query.get(torneo_id)
     if partido.fase == 'cuartos':
         semi_ronda = 1 if partido.ronda in [1, 2] else 2
         semi = Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='semi', ronda=semi_ronda).first()
         if semi:
-            if not semi.jugador1_id:
-                semi.jugador1_id = ganador_id
-            else:
-                semi.jugador2_id = ganador_id
+            if not semi.jugador1_id: semi.jugador1_id = ganador_id
+            else:                    semi.jugador2_id = ganador_id
         _sumar_puntos(perdedor_id, torneo_id, categoria, 'cuartos', torneo.pts_cuartos)
     elif partido.fase == 'semi':
         final = Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='final', ronda=1).first()
         if final:
-            if not final.jugador1_id:
-                final.jugador1_id = ganador_id
-            else:
-                final.jugador2_id = ganador_id
+            if not final.jugador1_id: final.jugador1_id = ganador_id
+            else:                     final.jugador2_id = ganador_id
         tercero = Partido.query.filter_by(torneo_id=torneo_id, categoria=categoria, fase='tercer_lugar', ronda=1).first()
         if tercero:
-            if not tercero.jugador1_id:
-                tercero.jugador1_id = perdedor_id
-            else:
-                tercero.jugador2_id = perdedor_id
+            if not tercero.jugador1_id: tercero.jugador1_id = perdedor_id
+            else:                       tercero.jugador2_id = perdedor_id
         _sumar_puntos(perdedor_id, torneo_id, categoria, 'semifinalista', torneo.pts_semifinalista)
     elif partido.fase == 'tercer_lugar':
-        _sumar_puntos(ganador_id, torneo_id, categoria, 'tercer_lugar', torneo.pts_semifinalista)
+        _sumar_puntos(ganador_id,  torneo_id, categoria, 'tercer_lugar', torneo.pts_semifinalista)
         _sumar_puntos(perdedor_id, torneo_id, categoria, 'cuarto_lugar', torneo.pts_cuartos)
     elif partido.fase == 'final':
-        _sumar_puntos(ganador_id, torneo_id, categoria, 'campeon', torneo.pts_campeon)
-        _sumar_puntos(perdedor_id, torneo_id, categoria, 'finalista', torneo.pts_finalista)
+        _sumar_puntos(ganador_id,  torneo_id, categoria, 'campeon',    torneo.pts_campeon)
+        _sumar_puntos(perdedor_id, torneo_id, categoria, 'finalista',  torneo.pts_finalista)
         _actualizar_puntos_globales(ganador_id)
         _actualizar_puntos_globales(perdedor_id)
     db.session.commit()
@@ -842,43 +912,32 @@ def _actualizar_puntos_globales(jugador_id):
         jugador.puntos_ranking = total
 
 
-# ─── RANKING PÚBLICO ────────────────────────────────────
+# ─── RANKING ────────────────────────────────────────────
 @main.route('/ranking')
 def ranking():
-    categoria = request.args.get('categoria', CATEGORIAS[0])
-    torneo_id = request.args.get('torneo_id', None)
+    categoria    = request.args.get('categoria', CATEGORIAS[0])
+    torneo_id    = request.args.get('torneo_id', None)
     torneos_lista = Torneo.query.order_by(Torneo.fecha.desc()).all()
-    ranking_data = db.session.query(
+    query = db.session.query(
         Jugador,
         db.func.sum(PuntosRanking.puntos).label('total_puntos'),
         db.func.count(PuntosRanking.id).label('torneos_jugados')
     ).join(PuntosRanking, Jugador.id == PuntosRanking.jugador_id)\
-     .filter(PuntosRanking.categoria == categoria)\
-     .group_by(Jugador.id)\
-     .order_by(db.desc('total_puntos')).all()
+     .filter(PuntosRanking.categoria == categoria)
     if torneo_id:
-        ranking_data = db.session.query(
-            Jugador,
-            db.func.sum(PuntosRanking.puntos).label('total_puntos'),
-            db.func.count(PuntosRanking.id).label('torneos_jugados')
-        ).join(PuntosRanking, Jugador.id == PuntosRanking.jugador_id)\
-         .filter(PuntosRanking.categoria == categoria, PuntosRanking.torneo_id == torneo_id)\
-         .group_by(Jugador.id)\
-         .order_by(db.desc('total_puntos')).all()
+        query = query.filter(PuntosRanking.torneo_id == torneo_id)
+    ranking_data = query.group_by(Jugador.id).order_by(db.desc('total_puntos')).all()
     return render_template('ranking/index.html',
-        ranking=ranking_data,
-        categorias=CATEGORIAS,
-        categoria_actual=categoria,
-        torneos=torneos_lista,
-        torneo_id_actual=torneo_id
-    )
+        ranking=ranking_data, categorias=CATEGORIAS,
+        categoria_actual=categoria, torneos=torneos_lista,
+        torneo_id_actual=torneo_id)
 
 
 # ─── PANEL PÚBLICO ──────────────────────────────────────
 @main.route('/publico')
 def panel_publico():
-    torneo_id = request.args.get('torneo_id', None)
-    categoria = request.args.get('categoria', None)
+    torneo_id       = request.args.get('torneo_id', None)
+    categoria       = request.args.get('categoria', None)
     torneos_activos = Torneo.query.filter_by(activo=True).order_by(Torneo.fecha.desc()).all()
     if not torneo_id and torneos_activos:
         torneo_id = torneos_activos[0].id
@@ -891,10 +950,10 @@ def panel_publico():
                 cats_con_inscritos.append({'cat': cat, 'count': count})
     if not categoria and cats_con_inscritos:
         categoria = cats_con_inscritos[0]['cat']
-    grupos = []
+    grupos        = []
     grupo_partidos = {}
     ultimos_resultados = []
-    proximo_partido = None
+    proximo_partido    = None
     if torneo and categoria:
         grupos = Grupo.query.filter_by(torneo_id=torneo.id, categoria=categoria).order_by(Grupo.numero).all()
         for grupo in grupos:
@@ -902,17 +961,12 @@ def panel_publico():
                 torneo_id=torneo.id, categoria=categoria, fase='grupos', grupo_id=grupo.id).all()
             grupo_partidos[grupo.id] = ordenar_partidos_sin_consecutivos(partidos_raw)
         ultimos_resultados = Partido.query.filter_by(
-            torneo_id=torneo.id, categoria=categoria, fase='grupos', jugado=True
+            torneo_id=torneo.id, categoria=categoria, jugado=True
         ).order_by(Partido.id.desc()).limit(5).all()
-        for grupo in grupos:
-            for p in grupo_partidos.get(grupo.id, []):
-                if not p.jugado:
-                    proximo_partido = p
-                    break
-            if proximo_partido:
-                break
+        proximo_partido = Partido.query.filter_by(
+            torneo_id=torneo.id, categoria=categoria, jugado=False).first()
     return render_template('publico/panel.html',
-        torneos=torneos_activos, torneo=torneo,
+        torneo=torneo, torneos_activos=torneos_activos,
         categoria_actual=categoria, cats_con_inscritos=cats_con_inscritos,
         grupos=grupos, grupo_partidos=grupo_partidos,
         ultimos_resultados=ultimos_resultados, proximo_partido=proximo_partido)

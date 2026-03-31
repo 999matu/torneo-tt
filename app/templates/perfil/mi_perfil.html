@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil – Rankevo{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5 pb-10">
+
+  <!-- FRASE MOTIVACIONAL -->
+  <div id="frase-card" class="rounded-2xl px-5 py-4 flex items-start gap-3"
+    style="background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(79,70,229,0.08));border:1px solid rgba(108,99,255,0.25);">
+    <span class="text-xl flex-shrink-0 mt-0.5">💬</span>
+    <p id="frase-texto" class="text-sm italic leading-relaxed" style="color:var(--text);"></p>
+  </div>
+
+  <!-- HEADER JUGADOR -->
+  <div class="rounded-2xl p-5 flex items-center gap-4"
+    style="background:#13131F;border:1px solid var(--border);">
+    <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black flex-shrink-0"
+      style="background:linear-gradient(135deg,var(--primary),#4F46E5);color:#fff;">
+      {{ jugador.nombre[:1].upper() }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-lg font-black truncate" style="color:var(--text);">{{ jugador.nombre }}</h1>
+      <div class="flex flex-wrap items-center gap-2 mt-1">
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+          style="background:rgba(108,99,255,0.15);color:var(--primary);">
+          {{ jugador.categoria }}
+        </span>
+        <span class="text-xs" style="color:var(--muted);">{{ current_user.username }}</span>
+      </div>
+    </div>
+    <div class="text-right flex-shrink-0">
+      <p class="text-3xl font-black tabular-nums" style="color:var(--primary);">{{ total_puntos }}</p>
+      <p class="text-xs font-bold uppercase tracking-widest" style="color:var(--muted);">pts totales</p>
+    </div>
+  </div>
+
+  <!-- STATS RÁPIDAS -->
+  {% set ganados = partidos | selectattr('ganador_id','equalto',jugador.id) | list | length %}
+  {% set jugados = partidos | selectattr('jugado','equalto',True) | list | length %}
+  {% set perdidos = jugados - ganados %}
+  {% set winrate = ((ganados / jugados * 100) | round(1)) if jugados > 0 else 0 %}
+
+  <div class="grid grid-cols-2 gap-3">
+    <div class="rounded-2xl p-4" style="background:#13131F;border:1px solid var(--border);">
+      <p class="text-3xl font-black tabular-nums" style="color:#86efac;">{{ ganados }}</p>
+      <p class="text-xs font-bold uppercase tracking-widest mt-1" style="color:var(--muted);">Victorias</p>
+    </div>
+    <div class="rounded-2xl p-4" style="background:#13131F;border:1px solid var(--border);">
+      <p class="text-3xl font-black tabular-nums" style="color:#fca5a5;">{{ perdidos }}</p>
+      <p class="text-xs font-bold uppercase tracking-widest mt-1" style="color:var(--muted);">Derrotas</p>
+    </div>
+    <div class="rounded-2xl p-4" style="background:#13131F;border:1px solid var(--border);">
+      <p class="text-3xl font-black tabular-nums" style="color:#fcd34d;">{{ inscripciones | length }}</p>
+      <p class="text-xs font-bold uppercase tracking-widest mt-1" style="color:var(--muted);">Torneos</p>
+    </div>
+    <div class="rounded-2xl p-4" style="background:#13131F;border:1px solid var(--border);">
+      <p class="text-3xl font-black tabular-nums" style="color:var(--primary);">{{ winrate }}%</p>
+      <p class="text-xs font-bold uppercase tracking-widest mt-1" style="color:var(--muted);">Win rate</p>
+    </div>
+  </div>
+
+  <!-- BARRA WIN RATE -->
+  <div class="rounded-2xl p-5" style="background:#13131F;border:1px solid var(--border);">
+    <div class="flex justify-between items-center mb-3">
+      <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--muted);">Rendimiento general</span>
+      <span class="text-xs font-bold" style="color:var(--text);">{{ ganados }}V – {{ perdidos }}D</span>
+    </div>
+    <div class="w-full rounded-full h-3 overflow-hidden" style="background:rgba(239,68,68,0.2);">
+      <div class="h-3 rounded-full transition-all duration-1000"
+        style="width:{{ winrate }}%;background:linear-gradient(90deg,#86efac,#22c55e);"
+        id="winbar"></div>
+    </div>
+    <div class="flex justify-between mt-2">
+      <span class="text-xs" style="color:#86efac;">{{ winrate }}% victorias</span>
+      <span class="text-xs" style="color:#fca5a5;">{{ (100 - winrate) | round(1) }}% derrotas</span>
+    </div>
+  </div>
+
+  <!-- PROBABILIDAD DE GANAR -->
+  {% if partidos %}
+  <div class="rounded-2xl p-5 space-y-4" style="background:#13131F;border:1px solid var(--border);">
+    <div>
+      <h3 class="text-sm font-bold" style="color:var(--text);">🎯 Probabilidad vs Rivales</h3>
+      <p class="text-xs mt-1" style="color:var(--muted);">Basado en enfrentamientos directos registrados</p>
+    </div>
+
+    {% set rivales_dict = {} %}
+    {% for p in partidos %}
+      {% if p.jugado %}
+        {% set rival = p.jugador2 if p.jugador1_id == jugador.id else p.jugador1 %}
+        {% if rival %}
+          {% if rival.nombre not in rivales_dict %}
+            {% set _ = rivales_dict.update({rival.nombre: {'ganados': 0, 'total': 0}}) %}
+          {% endif %}
+          {% set _ = rivales_dict[rival.nombre].update({'total': rivales_dict[rival.nombre]['total'] + 1}) %}
+          {% if p.ganador_id == jugador.id %}
+            {% set _ = rivales_dict[rival.nombre].update({'ganados': rivales_dict[rival.nombre]['ganados'] + 1}) %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    {% if rivales_dict %}
+      {% for nombre, datos in rivales_dict.items() %}
+        {% set prob = ((datos.ganados / datos.total * 100) | round(0) | int) %}
+        <div class="space-y-1">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+                style="background:rgba(108,99,255,0.2);color:var(--primary);">
+                {{ nombre[:1].upper() }}
+              </div>
+              <span class="text-sm font-semibold" style="color:var(--text);">{{ nombre }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs" style="color:var(--muted);">{{ datos.ganados }}/{{ datos.total }}</span>
+              <span class="text-sm font-black tabular-nums w-10 text-right"
+                style="color:{% if prob >= 60 %}#86efac{% elif prob >= 40 %}#fcd34d{% else %}#fca5a5{% endif %};">
+                {{ prob }}%
+              </span>
+            </div>
+          </div>
+          <div class="w-full rounded-full h-2 overflow-hidden" style="background:rgba(255,255,255,0.05);">
+            <div class="h-2 rounded-full"
+              style="width:{{ prob }}%;background:{% if prob >= 60 %}linear-gradient(90deg,#86efac,#22c55e){% elif prob >= 40 %}linear-gradient(90deg,#fde68a,#f59e0b){% else %}linear-gradient(90deg,#fca5a5,#ef4444){% endif %};"></div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-sm text-center py-4" style="color:var(--muted);">Sin enfrentamientos registrados aún</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- RANKING PERSONAL POR TORNEO -->
+  {% if puntos %}
+  <div class="rounded-2xl overflow-hidden" style="background:#13131F;border:1px solid var(--border);">
+    <div class="px-5 py-4" style="border-bottom:1px solid var(--border);">
+      <h3 class="text-sm font-bold" style="color:var(--text);">🏅 Ranking por Torneo</h3>
+    </div>
+    {% for p in puntos %}
+    <div class="flex items-center justify-between px-5 py-3"
+      style="border-top:1px solid rgba(255,255,255,0.04);">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+          style="background:rgba(108,99,255,0.12);color:var(--primary);">
+          {{ p.categoria }}
+        </span>
+        <span class="text-sm truncate" style="color:var(--text);">
+          {{ p.posicion_final | replace('_', ' ') | title }}
+        </span>
+      </div>
+      <span class="text-base font-black tabular-nums flex-shrink-0 ml-2"
+        style="color:{% if p.posicion_final == 'campeon' %}#F5C542{% elif p.posicion_final == 'finalista' %}#B0B8C9{% elif p.posicion_final == 'semifinalista' %}#C97D4A{% else %}var(--primary){% endif %};">
+        +{{ p.puntos }}<span class="text-xs font-normal" style="color:var(--muted);"> pts</span>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- HISTORIAL DE PARTIDOS -->
+  {% if partidos %}
+  <div class="rounded-2xl overflow-hidden" style="background:#13131F;border:1px solid var(--border);">
+    <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+      <h3 class="text-sm font-bold" style="color:var(--text);">📋 Últimos Partidos</h3>
+      <span class="text-xs px-2 py-1 rounded-full"
+        style="background:rgba(108,99,255,0.1);color:var(--primary);">
+        {{ partidos | selectattr('jugado','equalto',True) | list | length }} jugados
+      </span>
+    </div>
+    {% for p in partidos[:15] %}
+    {% set es_ganador = p.ganador_id == jugador.id %}
+    {% set rival = p.jugador2 if p.jugador1_id == jugador.id else p.jugador1 %}
+    <div class="flex items-center gap-3 px-5 py-3"
+      style="border-top:1px solid rgba(255,255,255,0.04);">
+      <div class="w-2 h-2 rounded-full flex-shrink-0"
+        style="background:{% if not p.jugado %}#4b5563{% elif es_ganador %}#86efac{% else %}#fca5a5{% endif %};"></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold truncate" style="color:var(--text);">
+          vs {{ rival.nombre if rival else '—' }}
+        </p>
+        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+          <span class="text-xs px-1.5 py-0.5 rounded"
+            style="background:rgba(255,255,255,0.05);color:var(--muted);">
+            {{ p.fase }}{% if p.ronda %} R{{ p.ronda }}{% endif %}
+          </span>
+          {% if p.resultado %}
+          <span class="text-xs" style="color:var(--muted);">{{ p.resultado }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex-shrink-0">
+        {% if not p.jugado %}
+        <span class="text-xs px-2 py-1 rounded-full"
+          style="background:rgba(255,255,255,0.05);color:var(--muted);">Pendiente</span>
+        {% elif es_ganador %}
+        <span class="text-xs font-bold px-2 py-1 rounded-full"
+          style="background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.2);">✓ Win</span>
+        {% else %}
+        <span class="text-xs font-bold px-2 py-1 rounded-full"
+          style="background:rgba(239,68,68,0.08);color:#fca5a5;border:1px solid rgba(239,68,68,0.15);">Loss</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+// Frases motivacionales universales — aplican a cualquier deporte
+const frases = [
+  "El campeón no es el que nunca pierde, es el que se levanta más veces de las que cae.",
+  "No entrenas para ganar el próximo partido. Entrenas para ser imparable.",
+  "Cada derrota es un manual de instrucciones para la próxima victoria.",
+  "La disciplina hace en los malos días lo que la motivación hace en los buenos.",
+  "El talento te lleva a la puerta. El trabajo te hace entrar.",
+  "Un mal resultado no define tu carrera. Define cómo reaccionas.",
+  "Presión es un privilegio. Significa que estás en el partido que importa.",
+  "No hay atajos al nivel élite. Solo horas acumuladas.",
+  "Tu peor rival eres tú mismo. Supérate hoy.",
+  "Juega cada punto como si fuera el último. Porque alguna vez lo será.",
+  "La consistencia vence al talento cuando el talento no es consistente.",
+  "Respira. Enfócate. Ejecuta. Repite.",
+  "Los grandes no nacen grandes. Se construyen partido a partido.",
+  "La mentalidad separa al bueno del excelente.",
+  "No importa cuánto caíste. Importa cuántas veces volviste a levantarte.",
+  "El esfuerzo de hoy es el resultado de mañana.",
+  "Cada punto ganado es el resultado de preparación silenciosa.",
+  "Competir es un privilegio. Hazlo con intensidad y respeto.",
+  "El miedo a perder es más peligroso que perder mismo.",
+  "Los campeones se construyen cuando nadie está mirando.",
+];
+
+const frase = frases[Math.floor(Math.random() * frases.length)];
+document.getElementById('frase-texto').textContent = '"' + frase + '"';
+
+// Animar barra win rate
+setTimeout(() => {
+  const bar = document.getElementById('winbar');
+  if (bar) {
+    const w = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = w; }, 100);
+  }
+}, 200);
+</script>
+{% endblock %}

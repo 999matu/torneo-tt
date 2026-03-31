@@ -1,64 +1,146 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - Asociación Nueva Talagante{% endblock %}
+{% block title %}Dashboard – Rankevo{% endblock %}
 {% block page_title %}Inicio{% endblock %}
 
 {% block content %}
-<h2 class="text-2xl font-bold mb-2">Bienvenido, {{ usuario.username }} 👋</h2>
-<p class="text-gray-400 mb-8">Panel de administración — Asociación Nueva Talagante</p>
+<div class="mb-8">
+    <h2 class="text-2xl font-bold mb-1">
+        Bienvenido, <span style="color:#6C63FF;">{{ usuario.username }}</span> 👋
+    </h2>
+    <p style="color:#6B6B90;" class="text-sm">
+        {% if current_user.rol in ('admin','superadmin') %}
+            Panel de administración — Rankevo
+        {% else %}
+            Tu espacio en Rankevo · Sistema de Gestión de Torneos
+        {% endif %}
+    </p>
+</div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-    {% if current_user.rol in ['admin', 'arbitro'] %}
+    {# ── ADMIN Y SUPERADMIN ── #}
+    {% if current_user.rol in ('admin', 'superadmin') %}
+
     <a href="{{ url_for('main.jugadores') }}"
-        class="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 flex items-center gap-4 transition">
-        <span class="text-4xl">👤</span>
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(108,99,255,0.15);">👤</div>
         <div>
-            <p class="font-bold text-lg">Jugadores</p>
-            <p class="text-gray-400 text-sm">Nómina, importar Excel</p>
+            <p class="font-bold text-white">Jugadores</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Nómina e importar Excel</p>
         </div>
     </a>
 
     <a href="{{ url_for('main.torneos') }}"
-        class="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 flex items-center gap-4 transition">
-        <span class="text-4xl">🏆</span>
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(108,99,255,0.15);">🏆</div>
         <div>
-            <p class="font-bold text-lg">Torneos</p>
-            <p class="text-gray-400 text-sm">Crear y gestionar torneos</p>
+            <p class="font-bold text-white">Torneos</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Crear y gestionar torneos</p>
         </div>
     </a>
-    {% endif %}
 
-    {% if current_user.rol == 'admin' %}
     <a href="{{ url_for('main.admin_usuarios') }}"
-        class="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 flex items-center gap-4 transition">
-        <span class="text-4xl">👥</span>
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(108,99,255,0.15);">👥</div>
         <div>
-            <p class="font-bold text-lg">Usuarios</p>
-            <p class="text-gray-400 text-sm">Aprobar cuentas y roles</p>
+            <p class="font-bold text-white">Usuarios</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Gestión de cuentas y roles</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('main.ranking') }}" target="_blank"
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(0,212,170,0.1);">🏅</div>
+        <div>
+            <p class="font-bold text-white">Ranking</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Tabla de posiciones general</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('main.panel_publico') }}" target="_blank"
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(239,68,68,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(239,68,68,0.1);">⚡</div>
+        <div>
+            <p class="font-bold text-white flex items-center gap-2">
+                Arbitraje en Vivo
+                <span class="text-xs bg-red-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">LIVE</span>
+            </p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Panel de marcador en tiempo real</p>
+        </div>
+    </a>
+
+    {% if current_user.rol == 'superadmin' %}
+    <a href="{{ url_for('main.superadmin_crear_usuario') }}"
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(234,179,8,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(234,179,8,0.1);">⚙️</div>
+        <div>
+            <p class="font-bold text-white">Superadmin</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Control total del sistema</p>
         </div>
     </a>
     {% endif %}
 
-    {% if current_user.rol == 'jugador' and current_user.jugador_id %}
+    {# ── JUGADOR ── #}
+    {% elif current_user.rol == 'jugador' %}
+
+    {% if current_user.jugador_id %}
     <a href="{{ url_for('main.mi_perfil') }}"
-        class="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 flex items-center gap-4 transition">
-        <span class="text-4xl">📊</span>
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(108,99,255,0.15);">📊</div>
         <div>
-            <p class="font-bold text-lg">Mi Perfil</p>
-            <p class="text-gray-400 text-sm">Mis partidos y ranking</p>
+            <p class="font-bold text-white">Mi Perfil</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Mis partidos y puntos de ranking</p>
         </div>
     </a>
+    {% else %}
+    <div class="rounded-xl p-6 flex items-center gap-4"
+        style="background:rgba(19,19,31,0.5);border:1px solid rgba(108,99,255,0.1);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl opacity-40"
+            style="background:rgba(108,99,255,0.1);">🔗</div>
+        <div>
+            <p class="font-bold" style="color:#6B6B90;">Sin jugador vinculado</p>
+            <p class="text-sm mt-0.5" style="color:#4a4a6a;">El administrador vinculará tu cuenta pronto</p>
+        </div>
+    </div>
     {% endif %}
 
-    <div class="bg-gray-800 rounded-xl p-6 flex items-center gap-4 opacity-40 cursor-not-allowed">
-        <span class="text-4xl">📋</span>
-        <div><p class="font-bold text-lg">Fixture</p><p class="text-gray-400 text-sm">Próximamente...</p></div>
-    </div>
+    <a href="{{ url_for('main.ranking') }}" target="_blank"
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(0,212,170,0.1);">🏅</div>
+        <div>
+            <p class="font-bold text-white">Ranking</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Tabla de posiciones general</p>
+        </div>
+    </a>
 
-    <div class="bg-gray-800 rounded-xl p-6 flex items-center gap-4 opacity-40 cursor-not-allowed">
-        <span class="text-4xl">🥇</span>
-        <div><p class="font-bold text-lg">Ranking</p><p class="text-gray-400 text-sm">Próximamente...</p></div>
-    </div>
+    <a href="{{ url_for('main.panel_publico') }}" target="_blank"
+        class="group rounded-xl p-6 flex items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+        style="background:rgba(19,19,31,0.9);border:1px solid rgba(108,99,255,0.2);">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+            style="background:rgba(108,99,255,0.15);">📺</div>
+        <div>
+            <p class="font-bold text-white">Panel Público</p>
+            <p class="text-sm mt-0.5" style="color:#6B6B90;">Ver torneos y resultados en vivo</p>
+        </div>
+    </a>
+
+    {% endif %}
 
 </div>
 {% endblock %}

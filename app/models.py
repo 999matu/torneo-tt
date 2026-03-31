@@ -1,6 +1,7 @@
 from app import db, login_manager
 from flask_login import UserMixin
 from datetime import datetime
+import secrets
 
 
 @login_manager.user_loader
@@ -13,13 +14,20 @@ class Usuario(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
     rol = db.Column(db.String(20), default='jugador')
     activo = db.Column(db.Boolean, default=False)
     aprobado = db.Column(db.Boolean, default=False)
+    email_verificado = db.Column(db.Boolean, default=False)
+    token_verificacion = db.Column(db.String(100), nullable=True)
     jugador_id = db.Column(db.Integer, db.ForeignKey('jugador.id'), nullable=True)
     creado = db.Column(db.DateTime, default=datetime.utcnow)
 
     jugador = db.relationship('Jugador', backref='usuario', foreign_keys=[jugador_id])
+
+    def generar_token(self):
+        self.token_verificacion = secrets.token_urlsafe(32)
+        return self.token_verificacion
 
 
 # ─── JUGADORES ──────────────────────────────────────────
@@ -100,8 +108,8 @@ class Partido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     torneo_id = db.Column(db.Integer, db.ForeignKey('torneo.id'), nullable=False)
     categoria = db.Column(db.String(20), nullable=False)
-    fase = db.Column(db.String(30), nullable=False)  # grupos / cuartos / semi / final / tercer_lugar
-    ronda = db.Column(db.Integer, nullable=True)      # posición en bracket
+    fase = db.Column(db.String(30), nullable=False)
+    ronda = db.Column(db.Integer, nullable=True)
     grupo_id = db.Column(db.Integer, db.ForeignKey('grupo.id'), nullable=True)
     jugador1_id = db.Column(db.Integer, db.ForeignKey('jugador.id'), nullable=True)
     jugador2_id = db.Column(db.Integer, db.ForeignKey('jugador.id'), nullable=True)

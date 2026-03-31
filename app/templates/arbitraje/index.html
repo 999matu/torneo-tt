@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% block title %}Arbitraje en Vivo - Rankevo{% endblock %}
+{% block page_title %}⚡ Arbitraje en Vivo{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- SELECTOR TORNEO / CATEGORÍA -->
+  <form method="get" action="{{ url_for('main.arbitraje') }}" class="flex flex-wrap gap-3 items-center">
+    <select name="torneo_id" onchange="this.form.submit()"
+      class="rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none"
+      style="background:#13131F;border:1px solid var(--border);color:var(--text);">
+      {% for t in torneos_activos %}
+        <option value="{{ t.id }}" {% if torneo and t.id == torneo.id %}selected{% endif %}>
+          {{ t.nombre }}
+        </option>
+      {% endfor %}
+    </select>
+
+    {% if torneo %}
+    <select name="categoria" onchange="this.form.submit()"
+      class="rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none"
+      style="background:#13131F;border:1px solid var(--border);color:var(--text);">
+      {% for c in cats_con_inscritos %}
+        <option value="{{ c.cat }}" {% if c.cat == categoria_actual %}selected{% endif %}>
+          {{ c.cat }}
+        </option>
+      {% endfor %}
+    </select>
+    {% endif %}
+
+    {% if partido_activo %}
+      <input type="hidden" name="partido_id" value="{{ partido_activo.id }}">
+    {% endif %}
+  </form>
+
+  {% if not torneo %}
+  <div class="rounded-2xl p-10 text-center" style="background:#13131F;border:1px solid var(--border);">
+    <div class="text-5xl mb-4">🏓</div>
+    <p class="font-semibold text-lg" style="color:var(--text);">No hay torneos activos</p>
+    <p class="text-sm mt-2" style="color:var(--muted);">Crea un torneo primero desde la sección Torneos.</p>
+  </div>
+
+  {% else %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- COLUMNA IZQUIERDA: lista de partidos pendientes -->
+    <div class="lg:col-span-1">
+      <h3 class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--muted);">
+        Partidos Pendientes
+      </h3>
+
+      {% if partidos_pendientes %}
+      <div class="space-y-2">
+        {% for p in partidos_pendientes %}
+        <a href="{{ url_for('main.arbitraje', torneo_id=torneo.id, categoria=categoria_actual, partido_id=p.id) }}"
+          class="flex flex-col gap-1 px-4 py-3 rounded-xl transition cursor-pointer"
+          style="background:{% if partido_activo and partido_activo.id == p.id %}rgba(108,99,255,0.2);border:1px solid var(--primary){% else %}#13131F;border:1px solid var(--border){% endif %};">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold" style="color:{% if partido_activo and partido_activo.id == p.id %}var(--primary){% else %}var(--muted){% endif %};">
+              {{ p.fase | upper }} {% if p.ronda %}· R{{ p.ronda }}{% endif %}
+            </span>
+            {% if p.grupo %}
+            <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(108,99,255,0.1);color:var(--primary);">
+              Grupo {{ p.grupo.numero }}
+            </span>
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold truncate" style="color:var(--text);">
+              {{ p.jugador1.nombre if p.jugador1 else '?' }}
+            </span>
+            <span class="text-xs" style="color:var(--muted);">vs</span>
+            <span class="text-sm font-bold truncate" style="color:var(--text);">
+              {{ p.jugador2.nombre if p.jugador2 else '?' }}
+            </span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="rounded-xl p-6 text-center" style="background:#13131F;border:1px solid var(--border);">
+        <p class="text-sm" style="color:var(--muted);">No hay partidos pendientes en esta categoría.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- COLUMNA DERECHA: panel árbitro -->
+    <div class="lg:col-span-2">
+
+      {% if not partido_activo %}
+      <div class="rounded-2xl p-10 text-center flex flex-col items-center justify-center"
+        style="background:#13131F;border:1px solid var(--border);min-height:300px;">
+        <div class="text-5xl mb-4">👈</div>
+        <p class="font-semibold" style="color:var(--text);">Selecciona un partido</p>
+        <p class="text-sm mt-2" style="color:var(--muted);">Haz clic en un partido de la lista para empezar a arbitrar.</p>
+      </div>
+
+      {% else %}
+      <div class="rounded-2xl p-6" style="background:#13131F;border:1px solid var(--border);">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-widest font-bold mb-1" style="color:var(--muted);">
+              {{ categoria_actual }} · {{ partido_activo.fase | upper }}{% if partido_activo.ronda %} · Ronda {{ partido_activo.ronda }}{% endif %}
+            </p>
+            <h3 class="text-lg font-bold" style="color:var(--text);">Marcador en Vivo</h3>
+          </div>
+          <a href="/publico?torneo_id={{ torneo.id }}&categoria={{ categoria_actual }}"
+            target="_blank"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition"
+            style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.25);"
+            onmouseover="this.style.background='rgba(239,68,68,0.25)'"
+            onmouseout="this.style.background='rgba(239,68,68,0.12)'">
+            📺 Pantalla pública
+          </a>
+        </div>
+
+        <!-- Marcador -->
+        <div id="marcador-panel"
+          data-partido="{{ partido_activo.id }}"
+          data-torneo="{{ torneo.id }}"
+          data-categoria="{{ categoria_actual }}"
+          data-j1="{{ partido_activo.jugador1.nombre if partido_activo.jugador1 else '' }}"
+          data-j2="{{ partido_activo.jugador2.nombre if partido_activo.jugador2 else '' }}"
+          data-puntos-set="{{ torneo.puntos_por_set | default(11) }}"
+          data-sets-ganar="{{ ((torneo.sets_por_partido | default(5)) // 2) + 1 }}">
+
+          <div class="grid grid-cols-3 gap-4 text-center mb-6">
+
+            <!-- JUGADOR 1 -->
+            <div class="flex flex-col items-center gap-3">
+              <p class="font-bold text-sm leading-tight" style="color:var(--text);">
+                {{ partido_activo.jugador1.nombre if partido_activo.jugador1 else '?' }}
+              </p>
+              <div id="pts1" class="text-7xl font-black tabular-nums" style="color:var(--primary);">0</div>
+              <div class="flex gap-2">
+                <button onclick="sumar(1)"
+                  class="w-14 h-14 rounded-2xl text-2xl font-black transition select-none"
+                  style="background:rgba(108,99,255,0.2);color:var(--primary);border:1px solid rgba(108,99,255,0.3);"
+                  onmouseover="this.style.background='rgba(108,99,255,0.4)'"
+                  onmouseout="this.style.background='rgba(108,99,255,0.2)'">+</button>
+                <button onclick="restar(1)"
+                  class="w-14 h-14 rounded-2xl text-2xl font-black transition select-none"
+                  style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);"
+                  onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                  onmouseout="this.style.background='rgba(255,255,255,0.04)'">−</button>
+              </div>
+            </div>
+
+            <!-- CENTRO -->
+            <div class="flex flex-col items-center justify-center gap-3">
+              <p class="text-xs uppercase tracking-widest font-bold" style="color:var(--muted);">Sets</p>
+              <div class="flex items-center gap-3">
+                <span id="sets1" class="text-4xl font-black" style="color:#00D4AA;">0</span>
+                <span class="text-xl font-bold" style="color:var(--muted);">—</span>
+                <span id="sets2" class="text-4xl font-black" style="color:#00D4AA;">0</span>
+              </div>
+              <p id="set-label" class="text-xs font-semibold" style="color:var(--muted);">Set 1</p>
+
+              <!-- Botón cerrar set manual -->
+              <button onclick="cerrarSet()"
+                class="px-5 py-2 rounded-xl text-sm font-bold transition"
+                style="background:rgba(0,212,170,0.12);color:#00D4AA;border:1px solid rgba(0,212,170,0.3);"
+                onmouseover="this.style.background='rgba(0,212,170,0.3)'"
+                onmouseout="this.style.background='rgba(0,212,170,0.12)'">
+                ✔ Cerrar Set
+              </button>
+
+              <!-- Botones reset -->
+              <div class="flex gap-2">
+                <button onclick="resetearPuntos()"
+                  class="px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+                  style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);"
+                  onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                  onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                  ↺ Puntos
+                </button>
+                <button onclick="resetearTodo()"
+                  class="px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+                  style="background:rgba(239,68,68,0.08);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);"
+                  onmouseover="this.style.background='rgba(239,68,68,0.2)'"
+                  onmouseout="this.style.background='rgba(239,68,68,0.08)'">
+                  🗑 Todo
+                </button>
+              </div>
+            </div>
+
+            <!-- JUGADOR 2 -->
+            <div class="flex flex-col items-center gap-3">
+              <p class="font-bold text-sm leading-tight" style="color:var(--text);">
+                {{ partido_activo.jugador2.nombre if partido_activo.jugador2 else '?' }}
+              </p>
+              <div id="pts2" class="text-7xl font-black tabular-nums" style="color:var(--primary);">0</div>
+              <div class="flex gap-2">
+                <button onclick="sumar(2)"
+                  class="w-14 h-14 rounded-2xl text-2xl font-black transition select-none"
+                  style="background:rgba(108,99,255,0.2);color:var(--primary);border:1px solid rgba(108,99,255,0.3);"
+                  onmouseover="this.style.background='rgba(108,99,255,0.4)'"
+                  onmouseout="this.style.background='rgba(108,99,255,0.2)'">+</button>
+                <button onclick="restar(2)"
+                  class="w-14 h-14 rounded-2xl text-2xl font-black transition select-none"
+                  style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);"
+                  onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                  onmouseout="this.style.background='rgba(255,255,255,0.04)'">−</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Historial de sets -->
+          <div id="historial-sets" class="flex flex-wrap gap-2 justify-center mb-6 min-h-8"></div>
+
+          <!-- Divider -->
+          <div class="my-4" style="border-top:1px solid var(--border);"></div>
+
+          <!-- Registrar resultado final -->
+          <div>
+            <p class="text-xs uppercase tracking-widest font-bold mb-3" style="color:var(--muted);">
+              Registrar Resultado Final
+            </p>
+            <form method="POST"
+              action="{% if partido_activo.fase == 'grupos' %}{{ url_for('main.registrar_resultado', torneo_id=torneo.id, partido_id=partido_activo.id) }}{% else %}{{ url_for('main.resultado_bracket', torneo_id=torneo.id, partido_id=partido_activo.id) }}{% endif %}">
+              <input type="hidden" name="categoria" value="{{ categoria_actual }}">
+              <input type="hidden" name="resultado" id="campo-resultado" value="">
+              <div class="grid grid-cols-2 gap-3">
+                {% if partido_activo.jugador1 %}
+                <button type="submit" name="ganador_id" value="{{ partido_activo.jugador1.id }}"
+                  onclick="document.getElementById('campo-resultado').value = generarResultado()"
+                  class="py-3 rounded-xl font-bold text-sm transition"
+                  style="background:rgba(34,197,94,0.12);color:#86efac;border:1px solid rgba(34,197,94,0.3);"
+                  onmouseover="this.style.background='rgba(34,197,94,0.3)'"
+                  onmouseout="this.style.background='rgba(34,197,94,0.12)'">
+                  🏆 Ganó {{ partido_activo.jugador1.nombre }}
+                </button>
+                {% endif %}
+                {% if partido_activo.jugador2 %}
+                <button type="submit" name="ganador_id" value="{{ partido_activo.jugador2.id }}"
+                  onclick="document.getElementById('campo-resultado').value = generarResultado()"
+                  class="py-3 rounded-xl font-bold text-sm transition"
+                  style="background:rgba(34,197,94,0.12);color:#86efac;border:1px solid rgba(34,197,94,0.3);"
+                  onmouseover="this.style.background='rgba(34,197,94,0.3)'"
+                  onmouseout="this.style.background='rgba(34,197,94,0.12)'">
+                  🏆 Ganó {{ partido_activo.jugador2.nombre }}
+                </button>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+
+        </div><!-- fin marcador-panel -->
+      </div>
+      {% endif %}
+
+    </div><!-- fin col derecha -->
+  </div><!-- fin grid -->
+  {% endif %}
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  const panel = document.getElementById('marcador-panel');
+  if (panel) {
+    const PARTIDO_ID  = panel.dataset.partido;
+    const TORNEO_ID   = panel.dataset.torneo;
+    const CATEGORIA   = panel.dataset.categoria;
+    const J1_NOMBRE   = panel.dataset.j1;
+    const J2_NOMBRE   = panel.dataset.j2;
+    const PUNTOS_SET  = parseInt(panel.dataset.puntosSet  || '11');
+    const SETS_GANAR  = parseInt(panel.dataset.setsGanar  || '3');
+
+    // Persistencia por partido usando sessionStorage
+    const STORAGE_KEY = 'rankevo_marcador_' + PARTIDO_ID;
+
+    function cargarEstado() {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return { p1: 0, p2: 0, s1: 0, s2: 0, setActual: 1, historial: [] };
+    }
+
+    function guardarEstado() {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+      } catch(e) {}
+    }
+
+    let estado = cargarEstado();
+    let cerrando = false; // evitar doble cierre automático
+    const socket = io();
+
+    function render() {
+      document.getElementById('pts1').textContent = estado.p1;
+      document.getElementById('pts2').textContent = estado.p2;
+      document.getElementById('sets1').textContent = estado.s1;
+      document.getElementById('sets2').textContent = estado.s2;
+
+      const label = document.getElementById('set-label');
+      if (label && !label.dataset.flashing) {
+        label.textContent = 'Set ' + estado.setActual;
+      }
+
+      const hist = document.getElementById('historial-sets');
+      if (hist) {
+        hist.innerHTML = estado.historial.map((s, i) =>
+          `<span class="px-3 py-1 rounded-lg text-sm font-bold"
+            style="background:rgba(108,99,255,0.1);color:var(--primary);border:1px solid rgba(108,99,255,0.2);">
+            S${i+1}: ${s[0]}–${s[1]}
+          </span>`
+        ).join('');
+      }
+      guardarEstado();
+      emitir();
+    }
+
+    function emitir() {
+      fetch('/torneos/' + TORNEO_ID + '/fixture/live/' + PARTIDO_ID, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          categoria: CATEGORIA,
+          j1: J1_NOMBRE, j2: J2_NOMBRE,
+          pts1: estado.p1, pts2: estado.p2,
+          sets1: estado.s1, sets2: estado.s2,
+          set_actual: estado.setActual,
+          historial: estado.historial
+        })
+      });
+    }
+
+    function verificarSetAutomatico() {
+      if (cerrando) return;
+      const p1 = estado.p1, p2 = estado.p2;
+      const diff = Math.abs(p1 - p2);
+      const j1Gana = p1 >= PUNTOS_SET && diff >= 2;
+      const j2Gana = p2 >= PUNTOS_SET && diff >= 2;
+      if (j1Gana || j2Gana) {
+        cerrando = true;
+        setTimeout(() => {
+          ejecutarCierreSet();
+          cerrando = false;
+        }, 500);
+      }
+    }
+
+    function ejecutarCierreSet() {
+      if (estado.p1 === 0 && estado.p2 === 0) return;
+      estado.historial.push([estado.p1, estado.p2]);
+      if (estado.p1 > estado.p2) estado.s1++;
+      else estado.s2++;
+      estado.setActual++;
+      estado.p1 = 0;
+      estado.p2 = 0;
+      render();
+
+      // Flash visual
+      const label = document.getElementById('set-label');
+      if (label) {
+        label.dataset.flashing = '1';
+        label.textContent = '✔ Set cerrado!';
+        label.style.color = '#00D4AA';
+        label.style.fontWeight = '900';
+        setTimeout(() => {
+          delete label.dataset.flashing;
+          label.style.color = '';
+          label.style.fontWeight = '';
+          label.textContent = 'Set ' + estado.setActual;
+        }, 1200);
+      }
+    }
+
+    function sumar(j) {
+      if (j === 1) estado.p1++;
+      else estado.p2++;
+      render();
+      verificarSetAutomatico();
+    }
+
+    function restar(j) {
+      if (j === 1) { if (estado.p1 > 0) estado.p1--; }
+      else         { if (estado.p2 > 0) estado.p2--; }
+      render();
+    }
+
+    function cerrarSet() {
+      ejecutarCierreSet();
+    }
+
+    function resetearPuntos() {
+      estado.p1 = 0;
+      estado.p2 = 0;
+      render();
+    }
+
+    function resetearTodo() {
+      if (!confirm('¿Resetear TODO el marcador incluyendo sets e historial?')) return;
+      estado = { p1: 0, p2: 0, s1: 0, s2: 0, setActual: 1, historial: [] };
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch(e) {}
+      render();
+    }
+
+    function generarResultado() {
+      return estado.historial.map(s => s[0] + '-' + s[1]).join(', ') || (estado.p1 + '-' + estado.p2);
+    }
+
+    window.sumar          = sumar;
+    window.restar         = restar;
+    window.cerrarSet      = cerrarSet;
+    window.resetearPuntos = resetearPuntos;
+    window.resetearTodo   = resetearTodo;
+    window.generarResultado = generarResultado;
+
+    // Render inicial con estado guardado
+    render();
+  }
+</script>
+{% endblock %}

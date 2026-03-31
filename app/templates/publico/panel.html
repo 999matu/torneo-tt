@@ -16,47 +16,47 @@
     --gold: #F5C542; --silver: #B0B8C9; --bronze: #C97D4A;
   }
   html { scroll-behavior: smooth; }
-  body { font-family: 'Inter', sans-serif; background: var(--dark); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+  body { font-family: "Inter", sans-serif; background: var(--dark); color: var(--text); overflow-x: hidden; min-height: 100vh; }
   #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:.5; }
 
-  /* ── NAV ── */
+  /* NAV */
   nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:16px 40px; display:flex; align-items:center; justify-content:space-between; background:rgba(7,7,15,0.95); backdrop-filter:blur(24px); border-bottom:1px solid var(--border); }
   .logo { font-size:1.3rem; font-weight:900; letter-spacing:-1px; background:linear-gradient(120deg,#fff 30%,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   .logo em { font-style:normal; -webkit-text-fill-color:var(--primary); }
   .nav-badge { display:flex; align-items:center; gap:8px; font-size:.75rem; font-weight:600; color:var(--accent); letter-spacing:.5px; }
-  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); animation:blink 1.5s infinite; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); animation:blink 1.5s infinite; flex-shrink:0; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
   .nav-right { display:flex; gap:10px; }
   .nav-btn { background:none; border:1px solid var(--border); padding:7px 18px; border-radius:7px; color:var(--muted); font-size:.8rem; font-weight:500; cursor:pointer; text-decoration:none; transition:border-color .2s,color .2s; }
   .nav-btn:hover { border-color:var(--primary); color:var(--text); }
 
-  /* ── LAYOUT ── */
+  /* LAYOUT */
   .page { position:relative; z-index:1; padding: 90px 24px 60px; max-width:1240px; margin:0 auto; }
 
-  /* ── SELECTORS ── */
+  /* SELECTORS */
   .selectors { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:32px; }
   .sel-group { display:flex; flex-direction:column; gap:6px; }
   .sel-label { font-size:.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
-  select { background:var(--card); border:1px solid var(--border); color:var(--text); padding:9px 16px; border-radius:8px; font-size:.85rem; font-family:'Inter',sans-serif; cursor:pointer; outline:none; }
+  select { background:var(--card); border:1px solid var(--border); color:var(--text); padding:9px 16px; border-radius:8px; font-size:.85rem; font-family:"Inter",sans-serif; cursor:pointer; outline:none; }
   select:focus { border-color:var(--primary); }
 
-  /* ── TABS ── */
+  /* TABS */
   .tabs { display:flex; gap:4px; margin-bottom:28px; border-bottom:1px solid var(--border); }
-  .tab { padding:10px 22px; font-size:.85rem; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:color .2s,border-color .2s; background:none; border-top:none; border-left:none; border-right:none; font-family:'Inter',sans-serif; }
+  .tab { padding:10px 22px; font-size:.85rem; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:color .2s,border-color .2s; background:none; border-top:none; border-left:none; border-right:none; font-family:"Inter",sans-serif; }
   .tab.active { color:var(--primary); border-bottom-color:var(--primary); }
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
 
-  /* ── CARDS ── */
+  /* CARDS */
   .card { background:var(--card); border:1px solid var(--border); border-radius:14px; backdrop-filter:blur(16px); overflow:hidden; }
   .card-header { padding:16px 24px; background:rgba(108,99,255,.06); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
   .card-title { font-size:.85rem; font-weight:700; letter-spacing:.5px; }
   .card-badge { font-size:.7rem; font-weight:700; padding:4px 10px; border-radius:20px; background:rgba(108,99,255,.15); color:var(--primary); }
 
-  /* ── GRUPOS GRID ── */
+  /* GRUPOS GRID */
   .grupos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
 
-  /* ── TABLA GRUPO ── */
+  /* TABLA GRUPO */
   .grupo-table { width:100%; border-collapse:collapse; font-size:.82rem; }
   .grupo-table th { padding:10px 16px; text-align:left; font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); background:rgba(108,99,255,.04); }
   .grupo-table td { padding:10px 16px; border-top:1px solid rgba(255,255,255,.04); }
@@ -67,7 +67,7 @@
   .pos-1 { color:var(--gold); font-weight:800; }
   .pos-2 { color:var(--silver); font-weight:800; }
 
-  /* ── PARTIDOS GRUPO ── */
+  /* PARTIDOS GRUPO */
   .partidos-list { padding:12px 0; }
   .partido-item { display:flex; align-items:center; gap:12px; padding:10px 20px; border-top:1px solid rgba(255,255,255,.04); font-size:.82rem; transition:background .2s; }
   .partido-item:hover { background:rgba(255,255,255,.02); }
@@ -79,7 +79,7 @@
   .pj-result.jugado { color:var(--text); }
   .pj-pending { font-size:.7rem; color:var(--muted); font-style:italic; }
 
-  /* ── BRACKET ── */
+  /* BRACKET */
   .bracket-wrap { overflow-x:auto; padding-bottom:16px; }
   .bracket { display:flex; gap:40px; align-items:flex-start; min-width:700px; padding:16px; }
   .bracket-col { display:flex; flex-direction:column; gap:20px; }
@@ -91,25 +91,32 @@
   .bracket-player.vacio { color:var(--muted); font-style:italic; }
   .bp-pts { font-weight:800; font-size:.8rem; }
 
-  /* ── LIVE MARCADOR ── */
+  /* ── EN VIVO: MÚLTIPLES CARDS ── */
   .live-section { margin-bottom:28px; }
-  .live-card { background:linear-gradient(135deg,rgba(108,99,255,.1),rgba(0,212,170,.05)); border:1px solid rgba(108,99,255,.3); border-radius:16px; padding:28px 32px; text-align:center; position:relative; overflow:hidden; }
-  .live-card::before { content:'EN VIVO'; position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:.65rem; font-weight:800; letter-spacing:3px; color:var(--accent); }
-  .live-players { display:flex; align-items:center; justify-content:center; gap:24px; margin-top:16px; }
-  .live-player { display:flex; flex-direction:column; align-items:center; gap:8px; }
-  .live-player-name { font-size:.9rem; font-weight:700; max-width:120px; text-align:center; line-height:1.2; }
-  .live-score { font-size:3.5rem; font-weight:900; letter-spacing:-3px; background:linear-gradient(120deg,#fff,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; min-width:60px; text-align:center; }
-  .live-vs { font-size:.8rem; font-weight:700; color:var(--muted); }
-  .live-sets { display:flex; gap:8px; margin-top:16px; justify-content:center; }
-  .set-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); padding:4px 12px; border-radius:20px; font-size:.75rem; font-weight:700; color:var(--muted); }
+  .live-section-title { font-size:.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  #live-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+  .live-placeholder { background:linear-gradient(135deg,rgba(108,99,255,.06),rgba(0,212,170,.03)); border:1px dashed rgba(108,99,255,.25); border-radius:16px; padding:36px 24px; text-align:center; grid-column:1/-1; }
+  .live-card { background:linear-gradient(135deg,rgba(108,99,255,.1),rgba(0,212,170,.05)); border:1px solid rgba(108,99,255,.35); border-radius:16px; padding:22px 24px; position:relative; overflow:hidden; transition:opacity .5s; }
+  .live-card-badge { display:flex; align-items:center; justify-content:center; gap:6px; font-size:.62rem; font-weight:800; letter-spacing:3px; color:var(--accent); margin-bottom:4px; }
+  .live-card-cat { text-align:center; font-size:.7rem; color:var(--muted); margin-bottom:14px; }
+  .live-players { display:flex; align-items:center; justify-content:center; gap:16px; }
+  .live-player { display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+  .live-player-name { font-size:.85rem; font-weight:700; text-align:center; line-height:1.2; max-width:110px; }
+  .live-score { font-size:3.2rem; font-weight:900; letter-spacing:-3px; background:linear-gradient(120deg,#fff,var(--primary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; min-width:54px; text-align:center; }
+  .live-center { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .live-vs { font-size:.75rem; font-weight:700; color:var(--muted); }
+  .live-sets-score { font-size:1.2rem; font-weight:800; color:var(--accent); }
+  .live-set-label { font-size:.68rem; color:var(--muted); }
+  .live-set-chips { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+  .set-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:700; color:var(--muted); }
   .set-chip.activo { background:rgba(108,99,255,.15); border-color:rgba(108,99,255,.4); color:var(--text); }
-  .live-empty { color:var(--muted); font-size:.85rem; margin-top:20px; padding-bottom:4px; }
+  .live-empty-msg { color:var(--muted); font-size:.85rem; margin-top:12px; }
 
-  /* ── ULTIMOS RESULTADOS ── */
+  /* ULTIMOS RESULTADOS */
   .resultados-list .partido-item { padding:12px 20px; }
   .resultado-score { font-size:.8rem; font-weight:800; color:var(--accent); background:rgba(0,212,170,.08); padding:3px 10px; border-radius:5px; }
 
-  /* ── RANKING TAB ── */
+  /* RANKING TAB */
   .rank-row-pub { display:grid; grid-template-columns:40px 1fr auto; align-items:center; padding:0 20px; border-top:1px solid rgba(255,255,255,.04); transition:background .2s; }
   .rank-row-pub:hover { background:rgba(255,255,255,.02); }
   .rank-pos { font-size:.9rem; font-weight:800; }
@@ -117,16 +124,16 @@
   .rank-av { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:800; color:#fff; flex-shrink:0; background:linear-gradient(135deg,var(--primary),#4F46E5); }
   .rank-pts-pub { font-weight:800; color:var(--accent); font-size:.9rem; }
 
-  /* ── EMPTY STATE ── */
+  /* EMPTY STATE */
   .empty { text-align:center; padding:48px 24px; color:var(--muted); font-size:.875rem; }
   .empty-ico { font-size:2rem; margin-bottom:10px; }
 
-  /* ── CATS PILLS ── */
+  /* CATS PILLS */
   .cat-pills { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
   .cat-pill { padding:6px 16px; border-radius:20px; font-size:.78rem; font-weight:600; border:1px solid var(--border); color:var(--muted); cursor:pointer; text-decoration:none; transition:all .2s; }
   .cat-pill.active, .cat-pill:hover { background:var(--primary); border-color:var(--primary); color:#fff; }
 
-  /* ── TORNEO HEADER ── */
+  /* TORNEO HEADER */
   .torneo-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding:20px 24px; background:var(--card); border:1px solid var(--border); border-radius:14px; }
   .torneo-logo { width:52px; height:52px; border-radius:10px; background:linear-gradient(135deg,var(--primary),var(--accent)); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; overflow:hidden; }
   .torneo-logo img { width:100%; height:100%; object-fit:cover; }
@@ -140,8 +147,9 @@
     .grupos-grid { grid-template-columns:1fr; }
     .bracket { gap:20px; }
     .bracket-match { width:160px; }
-    .live-score { font-size:2.5rem; }
-    .live-player-name { font-size:.8rem; }
+    .live-score { font-size:2.4rem; }
+    .live-player-name { font-size:.78rem; }
+    #live-grid { grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -149,7 +157,7 @@
 
 <canvas id="bgCanvas"></canvas>
 
-<!-- ── NAV ── -->
+<!-- NAV -->
 <nav>
   <div class="logo">Rank<em>evo</em></div>
   <div class="nav-badge"><span class="live-dot"></span>Panel Público en Vivo</div>
@@ -161,12 +169,12 @@
 
 <div class="page">
 
-  <!-- ── SELECTOR TORNEO ── -->
+  <!-- SELECTOR TORNEO -->
   <div class="selectors">
     <div class="sel-group">
       <span class="sel-label">Torneo</span>
       <select onchange="cambiarTorneo(this.value)">
-        {% for t in torneos %}
+        {% for t in torneos_activos %}
         <option value="{{ t.id }}" {% if torneo and t.id == torneo.id %}selected{% endif %}>{{ t.nombre }}</option>
         {% endfor %}
       </select>
@@ -174,7 +182,7 @@
   </div>
 
   {% if torneo %}
-  <!-- ── TORNEO HEADER ── -->
+  <!-- TORNEO HEADER -->
   <div class="torneo-header">
     <div class="torneo-logo">
       {% if torneo.logo %}
@@ -188,7 +196,7 @@
     <div class="torneo-status"><span class="live-dot"></span>Activo</div>
   </div>
 
-  <!-- ── CATEGORÍAS PILLS ── -->
+  <!-- CATEGORÍAS PILLS -->
   {% if cats_con_inscritos %}
   <div class="cat-pills">
     {% for item in cats_con_inscritos %}
@@ -200,34 +208,21 @@
   </div>
   {% endif %}
 
-  <!-- ── MARCADOR EN VIVO ── -->
+  <!-- ── EN VIVO: MÚLTIPLES PARTIDOS ── -->
   <div class="live-section">
-    <div class="live-card" id="liveCard">
-      <div class="live-empty" id="liveEmpty">
-        <div>📡 Esperando partido en vivo...</div>
-        <div style="margin-top:6px;font-size:.75rem">El marcador aparecerá automáticamente cuando comience un partido</div>
-      </div>
-      <div id="liveMarcador" style="display:none">
-        <div class="live-players">
-          <div class="live-player">
-            <div class="live-player-name" id="liveJ1">—</div>
-            <div class="live-score" id="livePts1">0</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-            <div class="live-vs">VS</div>
-            <div style="font-size:.7rem;color:var(--muted)" id="liveSetInfo">Set 1</div>
-          </div>
-          <div class="live-player">
-            <div class="live-player-name" id="liveJ2">—</div>
-            <div class="live-score" id="livePts2">0</div>
-          </div>
-        </div>
-        <div class="live-sets" id="liveSets"></div>
+    <div class="live-section-title">
+      <span class="live-dot"></span> Partidos en Vivo
+    </div>
+    <div id="live-grid">
+      <div class="live-placeholder" id="live-placeholder">
+        <div style="font-size:1.8rem;margin-bottom:10px;">📡</div>
+        <div class="live-empty-msg">Esperando partidos en vivo...</div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:6px;">El marcador aparecerá automáticamente cuando el árbitro inicie un partido</div>
       </div>
     </div>
   </div>
 
-  <!-- ── TABS ── -->
+  <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="showTab('grupos',this)">Grupos</button>
     <button class="tab" onclick="showTab('bracket',this)">Bracket</button>
@@ -235,7 +230,7 @@
     <button class="tab" onclick="showTab('ranking',this)">Ranking</button>
   </div>
 
-  <!-- ── TAB GRUPOS ── -->
+  <!-- TAB GRUPOS -->
   <div class="tab-panel active" id="tab-grupos">
     {% if grupos %}
     <div class="grupos-grid">
@@ -245,20 +240,15 @@
           <span class="card-title">Grupo {{ grupo.numero }}</span>
           <span class="card-badge">{{ grupo.jugadores|length }} jugadores</span>
         </div>
-        <!-- Tabla de posiciones -->
         <table class="grupo-table">
           <thead>
-            <tr>
-              <th>#</th><th>Jugador</th><th>PJ</th><th>PG</th><th>Pts</th>
-            </tr>
+            <tr><th>#</th><th>Jugador</th><th>PJ</th><th>PG</th><th>Pts</th></tr>
           </thead>
           <tbody>
             {% set sorted_jug = grupo.jugadores|sort(attribute='partidos_ganados', reverse=True) %}
             {% for gj in sorted_jug %}
             <tr>
-              <td class="{% if loop.index == 1 %}pos-1{% elif loop.index == 2 %}pos-2{% endif %}">
-                {{ loop.index }}
-              </td>
+              <td class="{% if loop.index == 1 %}pos-1{% elif loop.index == 2 %}pos-2{% endif %}">{{ loop.index }}</td>
               <td>
                 <span class="player-name">
                   <span class="player-av">{{ gj.jugador.nombre[:2].upper() }}</span>
@@ -272,7 +262,6 @@
             {% endfor %}
           </tbody>
         </table>
-        <!-- Partidos del grupo -->
         <div class="partidos-list">
           {% for partido in grupo_partidos.get(grupo.id, []) %}
           <div class="partido-item">
@@ -299,39 +288,47 @@
     {% endif %}
   </div>
 
-  <!-- ── TAB BRACKET ── -->
+  <!-- TAB BRACKET -->
   <div class="tab-panel" id="tab-bracket">
-    {% set fases = [('cuartos','Cuartos'),('semi','Semifinales'),('final','Final'),('tercer_lugar','3er Lugar')] %}
-    {% set hay_bracket = namespace(val=false) %}
-    {% for fase_key, fase_label in fases %}
-      {% set partidos_fase = [] %}
-      {# chequeamos si hay partidos en esta fase #}
-    {% endfor %}
     <div class="card">
       <div class="card-header"><span class="card-title">Bracket Eliminatorio</span></div>
       <div class="bracket-wrap">
         <div class="bracket">
+          {% set fases = [("cuartos","Cuartos"),("semi","Semifinales"),("final","Final"),("tercer_lugar","3er Lugar")] %}
           {% for fase_key, fase_label in fases %}
-          {% set partidos_fase = namespace(items=[]) %}
-          {% if torneo %}
           <div class="bracket-col">
             <div class="bracket-col-title">{{ fase_label }}</div>
-            {% set found = namespace(val=false) %}
-            {% for grupo in grupos %}{% endfor %}
-            {# Traemos partidos de esta fase desde el contexto — necesitamos pasarlos desde la ruta #}
-            <div class="bracket-match">
-              <div class="bracket-player vacio">Por definir</div>
-              <div class="bracket-player vacio">Por definir</div>
-            </div>
+            {% if partidos_bracket and partidos_bracket[fase_key] %}
+              {% for p in partidos_bracket[fase_key] %}
+              <div class="bracket-match">
+                <div class="bracket-player {% if p.jugado and p.ganador_id == p.jugador1_id %}ganador{% elif not p.jugador1 %}vacio{% endif %}">
+                  <span>{{ p.jugador1.nombre if p.jugador1 else 'Por definir' }}</span>
+                  {% if p.jugado and p.resultado %}
+                  <span class="bp-pts">{{ p.resultado.split('-')[0] if '-' in p.resultado else '' }}</span>
+                  {% endif %}
+                </div>
+                <div class="bracket-player {% if p.jugado and p.ganador_id == p.jugador2_id %}ganador{% elif not p.jugador2 %}vacio{% endif %}">
+                  <span>{{ p.jugador2.nombre if p.jugador2 else 'Por definir' }}</span>
+                  {% if p.jugado and p.resultado %}
+                  <span class="bp-pts">{{ p.resultado.split('-')[1].split(',')[0].strip() if '-' in p.resultado else '' }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="bracket-match">
+                <div class="bracket-player vacio">Por definir</div>
+                <div class="bracket-player vacio">Por definir</div>
+              </div>
+            {% endif %}
           </div>
-          {% endif %}
           {% endfor %}
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── TAB RESULTADOS ── -->
+  <!-- TAB RESULTADOS -->
   <div class="tab-panel" id="tab-resultados">
     <div class="card">
       <div class="card-header">
@@ -359,28 +356,17 @@
     </div>
   </div>
 
-  <!-- ── TAB RANKING ── -->
+  <!-- TAB RANKING -->
   <div class="tab-panel" id="tab-ranking">
     <div class="card">
       <div class="card-header">
         <span class="card-title">Ranking · {{ categoria_actual }}</span>
       </div>
-      {% if grupos %}
-      {% set ranking_grupo = [] %}
-      {% for grupo in grupos %}
-        {% for gj in grupo.jugadores %}
-          {# ranking simplificado por victorias en grupos #}
-        {% endfor %}
-      {% endfor %}
-      {% endif %}
       <div style="padding:8px 0">
-        {% set jugadores_ranking = [] %}
         {% for grupo in grupos %}
           {% for gj in grupo.jugadores|sort(attribute='partidos_ganados',reverse=True) %}
           <div class="rank-row-pub">
-            <span class="rank-pos" style="color:{% if loop.index == 1 %}var(--gold){% elif loop.index == 2 %}var(--silver){% elif loop.index == 3 %}var(--bronze){% else %}var(--muted){% endif %}">
-              G{{ grupo.numero }}
-            </span>
+            <span class="rank-pos" style="color:var(--muted);font-size:.72rem;">G{{ grupo.numero }}</span>
             <span class="rank-name-pub">
               <span class="rank-av">{{ gj.jugador.nombre[:2].upper() }}</span>
               {{ gj.jugador.nombre }}
@@ -405,7 +391,7 @@
 </div>
 
 <script>
-// ── PARTICLES ──
+// PARTICLES
 const canvas = document.getElementById('bgCanvas');
 const ctx = canvas.getContext('2d');
 let W, H, particles = [];
@@ -432,7 +418,7 @@ function loop(){
 }
 loop();
 
-// ── TABS ──
+// TABS
 function showTab(id, btn){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -440,43 +426,86 @@ function showTab(id, btn){
   btn.classList.add('active');
 }
 
-// ── SELECTOR TORNEO ──
+// SELECTOR TORNEO
 function cambiarTorneo(id){
   const cat = new URLSearchParams(window.location.search).get('categoria') || '';
   window.location.href = `{{ url_for('main.panel_publico') }}?torneo_id=${id}&categoria=${cat}`;
 }
 
-// ── SOCKET.IO EN VIVO ──
+// SOCKET.IO — MÚLTIPLES EN VIVO
 const socket = io();
+const marcadoresVivos = {};
+
 socket.on('marcador_live', data => {
-  document.getElementById('liveEmpty').style.display = 'none';
-  document.getElementById('liveMarcador').style.display = 'block';
-  document.getElementById('liveJ1').textContent = data.j1 || '—';
-  document.getElementById('liveJ2').textContent = data.j2 || '—';
-  document.getElementById('livePts1').textContent = data.pts1 ?? 0;
-  document.getElementById('livePts2').textContent = data.pts2 ?? 0;
-  document.getElementById('liveSetInfo').textContent = `Set ${data.set_actual || 1}`;
-  const setsEl = document.getElementById('liveSets');
-  setsEl.innerHTML = '';
-  if(data.historial && data.historial.length){
-    data.historial.forEach((s,i) => {
-      const chip = document.createElement('div');
-      chip.className = 'set-chip';
-      chip.textContent = `${s[0]}-${s[1]}`;
-      setsEl.appendChild(chip);
-    });
+  const placeholder = document.getElementById('live-placeholder');
+  if (placeholder) placeholder.style.display = 'none';
+
+  const grid = document.getElementById('live-grid');
+  let card = document.getElementById('live-card-' + data.partido_id);
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'live-card-' + data.partido_id;
+    card.className = 'live-card';
+    grid.appendChild(card);
   }
-  const activo = document.createElement('div');
-  activo.className = 'set-chip activo';
-  activo.textContent = `${data.pts1}-${data.pts2}`;
-  setsEl.appendChild(activo);
+  marcadoresVivos[data.partido_id] = data;
+
+  let setsHtml = '';
+  if (data.historial && data.historial.length) {
+    setsHtml = data.historial.map((s, i) =>
+      `<div class="set-chip">S${i+1}: ${s[0]}-${s[1]}</div>`
+    ).join('');
+  }
+  setsHtml += `<div class="set-chip activo">${data.pts1 ?? 0}-${data.pts2 ?? 0}</div>`;
+
+  card.innerHTML = `
+    <div class="live-card-badge">
+      <span class="live-dot"></span> EN VIVO
+    </div>
+    <div class="live-card-cat">${data.categoria || ''}</div>
+    <div class="live-players">
+      <div class="live-player">
+        <div class="live-player-name">${data.j1 || '—'}</div>
+        <div class="live-score">${data.pts1 ?? 0}</div>
+      </div>
+      <div class="live-center">
+        <div class="live-vs">VS</div>
+        <div class="live-sets-score">${data.sets1 ?? 0} — ${data.sets2 ?? 0}</div>
+        <div class="live-set-label">Set ${data.set_actual || 1}</div>
+      </div>
+      <div class="live-player">
+        <div class="live-player-name">${data.j2 || '—'}</div>
+        <div class="live-score">${data.pts2 ?? 0}</div>
+      </div>
+    </div>
+    <div class="live-set-chips">${setsHtml}</div>
+  `;
 });
 
 socket.on('resultado_actualizado', data => {
-  // Recargar página cuando se registra resultado
+  const card = document.getElementById('live-card-' + data.partido_id);
+  if (card) {
+    card.style.opacity = '0';
+    setTimeout(() => {
+      card.remove();
+      delete marcadoresVivos[data.partido_id];
+      const grid = document.getElementById('live-grid');
+      if (!grid.querySelector('.live-card')) {
+        const ph = document.getElementById('live-placeholder');
+        if (ph) ph.style.display = '';
+        else {
+          const newPh = document.createElement('div');
+          newPh.id = 'live-placeholder';
+          newPh.className = 'live-placeholder';
+          newPh.innerHTML = `<div style="font-size:1.8rem;margin-bottom:10px;">📡</div><div class="live-empty-msg">Esperando partidos en vivo...</div>`;
+          grid.appendChild(newPh);
+        }
+      }
+    }, 500);
+  }
   const torneo_id = new URLSearchParams(window.location.search).get('torneo_id');
-  if(data.torneo_id == torneo_id){
-    setTimeout(()=>location.reload(), 1500);
+  if (String(data.torneo_id) === String(torneo_id)) {
+    setTimeout(() => location.reload(), 1800);
   }
 });
 </script>

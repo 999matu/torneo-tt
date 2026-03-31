@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Superadmin — Usuarios{% endblock %}
+{% block page_title %}⚙️ Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- FORMULARIO CREAR USUARIO -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800">
+      <h2 class="text-sm font-bold text-white tracking-wide">Crear usuario directamente</h2>
+      <p class="text-xs text-gray-500 mt-0.5">Sin necesidad de registro. Activo y aprobado de inmediato.</p>
+    </div>
+    <div class="px-6 py-5">
+      <form method="POST" action="{{ url_for('main.superadmin_crear_usuario') }}">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Username</label>
+            <input type="text" name="username" required
+              class="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition">
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Contraseña</label>
+            <input type="text" name="password" required
+              class="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition">
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Rol</label>
+            <select name="rol"
+              class="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition">
+              {% for r in roles %}
+              <option value="{{ r }}">{{ r }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Vincular jugador</label>
+            <select name="jugador_id"
+              class="bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition">
+              <option value="">— Sin jugador —</option>
+              {% for j in jugadores %}
+              <option value="{{ j.id }}">{{ j.nombre }} ({{ j.categoria }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex flex-col justify-end">
+            <button type="submit"
+              class="bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition w-full">
+              Crear usuario
+            </button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LISTA DE USUARIOS -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-bold text-white tracking-wide">Todos los usuarios</h2>
+      <span class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-full font-semibold">{{ usuarios|length }} total</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">
+            <th class="px-6 py-3 text-left">Username</th>
+            <th class="px-6 py-3 text-left">Rol</th>
+            <th class="px-6 py-3 text-left">Estado</th>
+            <th class="px-6 py-3 text-left">Jugador vinculado</th>
+            <th class="px-6 py-3 text-left">Creado</th>
+            <th class="px-6 py-3 text-left">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr class="border-t border-gray-800 hover:bg-gray-800 hover:bg-opacity-40 transition">
+            <td class="px-6 py-3 font-semibold text-white">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center text-xs font-black flex-shrink-0">
+                  {{ u.username[0].upper() }}
+                </div>
+                {{ u.username }}
+              </div>
+            </td>
+            <td class="px-6 py-3">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full
+                {% if u.rol == 'superadmin' %}bg-red-900 bg-opacity-40 text-red-400 border border-red-800
+                {% elif u.rol == 'admin' %}bg-yellow-900 bg-opacity-40 text-yellow-400 border border-yellow-800
+                {% else %}bg-gray-800 text-gray-400 border border-gray-700{% endif %}">
+                {{ u.rol }}
+              </span>
+            </td>
+            <td class="px-6 py-3">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full
+                {% if u.activo %}bg-green-900 bg-opacity-40 text-green-400 border border-green-800
+                {% else %}bg-red-900 bg-opacity-40 text-red-400 border border-red-800{% endif %}">
+                {% if u.activo %}Activo{% else %}Inactivo{% endif %}
+              </span>
+            </td>
+            <td class="px-6 py-3 text-gray-400">
+              {{ u.jugador.nombre if u.jugador else '—' }}
+            </td>
+            <td class="px-6 py-3 text-gray-500 text-xs">
+              {{ u.creado.strftime('%d/%m/%Y') }}
+            </td>
+            <td class="px-6 py-3">
+              {% if u.rol != 'superadmin' %}
+              <a href="{{ url_for('main.desactivar_usuario', usuario_id=u.id) }}"
+                class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition
+                {% if u.activo %}border-red-800 text-red-400 hover:bg-red-900 hover:bg-opacity-30
+                {% else %}border-green-800 text-green-400 hover:bg-green-900 hover:bg-opacity-30{% endif %}">
+                {% if u.activo %}Desactivar{% else %}Activar{% endif %}
+              </a>
+              {% else %}
+              <span class="text-xs text-gray-600">Protegido</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
